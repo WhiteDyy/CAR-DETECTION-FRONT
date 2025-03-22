@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- 由 Microsoft Visio, SVG Export 生成 绘图4.svg Page-1 -->
+
+<svg
+   width="7.7878537in"
+   height="2.3332295in"
+   viewBox="0 0 560.7256 167.99277"
+   xml:space="preserve"
+   color-interpolation-filters="sRGB"
+   class="st2"
+   version="1.1"
+   id="svg7"
+   sodipodi:docname="switch.svg"
+   inkscape:export-filename="..\Desktop\绘图4.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/"><defs
+   id="defs7"><linearGradient
+     id="swatch7"
+     inkscape:swatch="solid"><stop
+       style="stop-color:#000000;stop-opacity:1;"
+       offset="0"
+       id="stop7" /></linearGradient></defs><sodipodi:namedview
+   id="namedview7"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:document-units="in"><inkscape:page
+     x="0"
+     y="-2.1930854e-13"
+     width="560.72559"
+     height="167.99277"
+     id="page1"
+     margin="0"
+     bleed="0" /></sodipodi:namedview>
+	<v:documentProperties
+   v:langID="2052"
+   v:metric="true"
+   v:viewMarkup="false">
+		<v:userDefs>
+			<v:ud
+   v:nameU="msvNoAutoConnect"
+   v:val="VT0(1):26" />
+		</v:userDefs>
+	</v:documentProperties>
+
+	<style
+   type="text/css"
+   id="style1">
+	<![CDATA[
+		.st1 {stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.75}
+		.st2 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<g
+   v:mID="0"
+   v:index="1"
+   v:groupContext="foregroundPage"
+   id="g7"
+   transform="translate(-16.921287,-39.310005)">
+		<title
+   id="title1">页-1</title>
+		<v:pageProperties
+   v:drawingScale="0.0393701"
+   v:pageScale="0.0393701"
+   v:drawingUnits="24"
+   v:shadowOffsetX="8.50394"
+   v:shadowOffsetY="-8.50394" />
+		<g
+   id="shape1-1"
+   v:mID="1"
+   v:groupContext="shape"
+   transform="rotate(14.0362,3118.8569,827.85741)">
+			<title
+   id="title2">工作表.1</title>
+			<path
+   d="m 0,841.89 a 931.928,91.8523 174.85 0 1 502.56,0"
+   class="st1"
+   id="path2" />
+		</g>
+		<g
+   id="shape2-4"
+   v:mID="2"
+   v:groupContext="shape"
+   transform="rotate(14.0362,3328.5766,1012.4137)">
+			<title
+   id="title3">工作表.2</title>
+			<path
+   d="m 0,841.89 a 833.972,91.7592 174.22 0 1 449.28,0"
+   class="st1"
+   id="path3" />
+		</g>
+		<g
+   id="shape3-7"
+   v:mID="3"
+   v:groupContext="shape"
+   transform="translate(17.2959,-802.205)">
+			<title
+   id="title4">工作表.3</title>
+			<path
+   d="M 0,841.89 H 558.56"
+   class="st1"
+   id="path4" />
+		</g>
+		<g
+   id="shape4-10"
+   v:mID="4"
+   v:groupContext="shape"
+   transform="translate(17.7531,-756.85)">
+			<title
+   id="title5">工作表.4</title>
+			<path
+   d="M 0,841.89 H 71.96"
+   class="st1"
+   id="path5" />
+		</g>
+		<g
+   id="shape5-13"
+   v:mID="5"
+   v:groupContext="shape"
+   transform="translate(140.74,-756.85)">
+			<title
+   id="title6">工作表.5</title>
+			<path
+   d="M 0,841.89 H 198.43"
+   class="st1"
+   id="path6" />
+		</g>
+		<g
+   id="shape6-16"
+   v:mID="6"
+   v:groupContext="shape"
+   transform="translate(378.85,-756.85)">
+			<title
+   id="title7">工作表.6</title>
+			<path
+   d="M 0,841.89 H 197.01"
+   class="st1"
+   id="path7" />
+		</g>
+	</g>
+</svg>
