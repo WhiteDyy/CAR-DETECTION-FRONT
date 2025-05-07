@@ -1,0 +1,358 @@
+<template>
+  <n-layout has-sider>
+    <!-- 左侧表单和节点信息区域 -->
+    <n-layout-sider bordered width="500" style="padding: 20px;">
+      <n-card title="插入节点">
+        <n-form :model="nodeForm">
+          <n-form-item label="起点节点" v-if="nodes.length > 0">
+            <n-select v-model:value="nodeForm.startId" :options="startNodeOptions" placeholder="选择起点节点" />
+          </n-form-item>
+          <n-form-item label="名称">
+            <n-input v-model:value="nodeForm.name" placeholder="节点名称" />
+          </n-form-item>
+          <n-form-item label="里程">
+            <n-input v-model:value="nodeForm.mileage" placeholder="里程" />
+          </n-form-item>
+          <n-form-item label="站点名称">
+            <n-input v-model:value="nodeForm.station" placeholder="站点名称" />
+          </n-form-item>
+          <n-form-item label="类型">
+            <n-select v-model:value="nodeForm.type" :options="typeOptions" />
+          </n-form-item>
+          <n-form-item label="方向" v-if="nodeForm.type === 'branch'">
+            <n-select v-model:value="nodeForm.direction" :options="directionOptions" />
+          </n-form-item>
+          <n-button type="primary" @click="addNodeFromForm">插入节点</n-button>
+        </n-form>
+      </n-card>
+
+      <!-- 节点信息卡片 -->
+      <n-card title="节点信息" style="margin-top: 20px;">
+        <n-collapse>
+          <n-collapse-item v-for="(node, index) in nodes" :key="index" :title="node.content">
+            <n-form :model="node" label-width="100">
+              <n-form-item label="名称">
+                <n-input v-model:value="node.content" />
+              </n-form-item>
+              <n-form-item label="里程">
+                <n-input v-model:value="node.mileage" />
+              </n-form-item>
+              <n-form-item label="站点名称">
+                <n-input v-model:value="node.station" />
+              </n-form-item>
+              <n-form-item label="类型">
+                <n-select v-model:value="node.type" :options="typeOptions" />
+              </n-form-item>
+              <n-form-item label="方向" v-if="node.type === 'branch'">
+                <n-select v-model:value="node.direction" :options="directionOptions" />
+              </n-form-item>
+            </n-form>
+          </n-collapse-item>
+        </n-collapse>
+      </n-card>
+    </n-layout-sider>
+
+    <!-- 右侧预览区域 -->
+    <n-layout-content style="padding: 20px;">
+      <n-card title="线路预览">
+        <div class="preview-container" ref="container">
+          <div v-for="(node, index) in nodes" :key="index" class="timeline-node"
+            :class="{ 'main-node': node.type === 'main', 'branch-node': node.type === 'branch' }"
+            :style="getNodeStyle(index)">
+            <div class="timeline-dot"></div>
+            <div class="timeline-info">
+              <div>名称: {{ node.content }}</div>
+              <div>里程: {{ node.mileage }}</div>
+              <div>类型: {{ node.type === 'main' ? '主线' : '道岔' }}</div>
+            </div>
+          </div>
+          <div v-for="(connection, index) in connections" :key="'conn-' + index" class="connection-line"
+            :ref="el => connectionLines[index] = el"></div>
+        </div>
+      </n-card>
+      <n-button type="primary" @click="saveToLocal" style="margin-top: 10px">
+        保存线路图
+      </n-button>
+    </n-layout-content>
+  </n-layout>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import {
+  NLayout,
+  NLayoutSider,
+  NLayoutContent,
+  NCard,
+  NForm,
+  NFormItem,
+  NInput,
+  NButton,
+  NSelect,
+  NCollapse,
+  NCollapseItem,
+} from 'naive-ui';
+
+const nodes = ref([]); // 节点列表
+const connections = ref([]); // 连接关系
+const connectionLines = ref([]); // 连线引用
+const container = ref(null); // 预览容器
+
+// 表单数据
+const nodeForm = ref({
+  startId: null,
+  name: '',
+  mileage: '',
+  station: '',
+  type: 'main',
+  direction: 'straight',
+});
+
+// 类型选项
+const typeOptions = [
+  { label: '主线', value: 'main' },
+  { label: '道岔', value: 'branch' },
+];
+
+// 方向选项
+const directionOptions = [
+  { label: '斜上方', value: 'up' },
+  { label: '正方', value: 'straight' },
+  { label: '斜下方', value: 'down' },
+];
+
+// 起点节点选项
+const startNodeOptions = computed(() => {
+  return nodes.value.map(node => ({ label: node.content, value: node.id }));
+});
+
+// 节点宽度和高度
+const NODE_WIDTH = 120;
+const NODE_HEIGHT = 60;
+const PREVIEW_HEIGHT = 350; // 预览区域高度
+
+// 添加节点函数
+const addNodeFromForm = () => {
+  const node = {
+    id: nodes.value.length,
+    content: nodeForm.value.name,
+    type: nodes.value.length === 0 ? 'main' : nodeForm.value.type,
+    direction: nodeForm.value.direction,
+    x: 0,
+    y: PREVIEW_HEIGHT / 2 - NODE_HEIGHT / 2, // 垂直居中
+    mileage: nodeForm.value.mileage,
+    station: nodeForm.value.station,
+  };
+
+  // 计算节点位置
+  if (nodes.value.length > 0 && nodeForm.value.startId !== null) {
+    const startNode = nodes.value.find(n => n.id === nodeForm.value.startId);
+    if (startNode) {
+      if (node.type === 'main') {
+        node.x = startNode.x + NODE_WIDTH;
+        node.y = startNode.y;
+      } else if (node.type === 'branch') {
+        node.x = startNode.x + NODE_WIDTH;
+        switch (node.direction) {
+          case 'up':
+            node.y = startNode.y - NODE_HEIGHT;
+            break;
+          case 'straight':
+            node.y = startNode.y;
+            break;
+          case 'down':
+            node.y = startNode.y + NODE_HEIGHT;
+            break;
+        }
+      }
+    }
+  }
+
+  // 添加节点
+  nodes.value.push(node);
+
+  // 添加连接
+  if (nodes.value.length > 1 && nodeForm.value.startId !== null) {
+    connections.value.push({
+      start: nodeForm.value.startId,
+      end: node.id,
+    });
+  }
+
+  // 重置表单
+  nodeForm.value = {
+    startId: nodes.value.length > 0 ? nodes.value[nodes.value.length - 1].id : null,
+    name: '',
+    mileage: '',
+    station: '',
+    type: 'main',
+    direction: 'straight',
+  };
+
+  // 更新连线
+  nextTick(() => drawConnectionLines());
+};
+
+// 获取节点样式
+const getNodeStyle = (index) => {
+  const node = nodes.value[index];
+  return {
+    left: `${node.x}px`,
+    top: `${node.y}px`,
+  };
+};
+
+// 绘制连线
+const drawConnectionLines = () => {
+  connections.value.forEach((conn, index) => {
+    const line = connectionLines.value[index];
+    if (!line) return;
+
+    const startNode = container.value.querySelectorAll('.timeline-node')[conn.start];
+    const endNode = container.value.querySelectorAll('.timeline-node')[conn.end];
+    if (!startNode || !endNode) return;
+
+    const startDot = startNode.querySelector('.timeline-dot');
+    const endDot = endNode.querySelector('.timeline-dot');
+    const containerRect = container.value.getBoundingClientRect();
+
+    const startRect = startDot.getBoundingClientRect();
+    const endRect = endDot.getBoundingClientRect();
+
+    const startX = startRect.left + startRect.width / 2 - containerRect.left;
+    const startY = startRect.top + startRect.height / 2 - containerRect.top;
+    const endX = endRect.left + endRect.width / 2 - containerRect.left;
+    const endY = endRect.top + endRect.height / 2 - containerRect.top;
+
+    const length = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+    const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+
+    line.style.width = `${length}px`;
+    line.style.left = `${startX}px`;
+    line.style.top = `${startY}px`;
+    line.style.transform = `rotate(${angle}deg)`;
+    line.style.transformOrigin = '0 0';
+  });
+};
+
+
+
+
+// 添加保存到本地的方法
+const saveToLocal = () => {
+  const data = {
+    nodes: nodes.value,
+    connections: connections.value
+  };
+  localStorage.setItem('routeData', JSON.stringify(data));
+  $message.success('线路图已保存到本地');
+
+};
+
+// 添加读取本地数据的方法
+const loadFromLocal = () => {
+  const savedData = localStorage.getItem('routeData');
+  if (savedData) {
+    const data = JSON.parse(savedData);
+    nodes.value = data.nodes;
+    connections.value = data.connections;
+    nextTick(() => drawConnectionLines());
+  }
+};
+
+// 在mounted时自动加载
+onMounted(() => {
+  loadFromLocal();
+  window.addEventListener('resize', drawConnectionLines);
+});
+
+// 生命周期钩子
+onMounted(() => {
+  window.addEventListener('resize', drawConnectionLines);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', drawConnectionLines);
+});
+</script>
+
+<style scoped>
+.preview-container {
+  position: relative;
+  width: 100%;
+  /* 占满右侧区域 */
+  height: 350px;
+  border: 1px solid #ccc;
+  overflow-x: auto;
+  /* 水平滚动 */
+  overflow-y: hidden;
+  /* 禁止垂直滚动 */
+  background: #f9f9f9;
+  padding: 20px;
+}
+
+.timeline-node {
+  position: absolute;
+  width: 120px;
+  text-align: center;
+}
+
+.timeline-dot {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #999;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+/* 主线节点颜色 */
+.main-node .timeline-dot {
+  border-color: #18a058;
+  /* 绿色 */
+}
+
+/* 道岔节点颜色 */
+.branch-node .timeline-dot {
+  border-color: #fa2f14;
+  /* 红色 */
+}
+
+.timeline-content {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.timeline-info {
+  position: absolute;
+  top: 20px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #333;
+}
+
+.connection-line {
+  position: absolute;
+  background: #999;
+  height: 2px;
+  z-index: 1;
+  transform-origin: 0 0;
+}
+
+.connect-start .timeline-dot {
+  border-color: #18a058;
+}
+
+.connect-end .timeline-dot {
+  border-color: #d03050;
+}
+</style>

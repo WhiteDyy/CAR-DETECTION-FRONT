@@ -1,9 +1,12 @@
 <!-- 主组件 -->
 <template>
   <AppPage>
+
     <n-layout has-sider class="full-layout">
       <!-- 左侧 20% -->
+
       <n-layout-sider width="30%" content-style="padding: 5px;">
+
         <div class="card-container">
           <!-- 第一列 -->
           <div class="card-table">
@@ -54,6 +57,7 @@
 
       <!-- 右侧 80% -->
       <n-layout class="right-container">
+
         <!-- 右侧上部 40% -->
         <n-layout-content content-style="padding: 5px;" class="upper-section">
           <div class="card-content">
@@ -80,46 +84,28 @@
           <div class="chart-container">
             <!-- 9个折线图，按照 3x3 布局 -->
             <div class="chart-row">
-              <TrendChart
-                :data="switchChartData" parameter="左高低" :color="colorMap['左高低']"
-                :x-axis-data="switchXAxisData" title="左高低趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="右高低" :color="colorMap['右高低']"
-                :x-axis-data="switchXAxisData" title="右高低趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="左轨向" :color="colorMap['左轨向']"
-                :x-axis-data="switchXAxisData" title="左轨向趋势"
-              />
+              <TrendChart :data="switchChartData" parameter="左高低" :color="colorMap['左高低']"
+                :x-axis-data="switchXAxisData" title="左高低趋势" />
+              <TrendChart :data="switchChartData" parameter="右高低" :color="colorMap['右高低']"
+                :x-axis-data="switchXAxisData" title="右高低趋势" />
+              <TrendChart :data="switchChartData" parameter="左轨向" :color="colorMap['左轨向']"
+                :x-axis-data="switchXAxisData" title="左轨向趋势" />
             </div>
             <div class="chart-row">
-              <TrendChart
-                :data="switchChartData" parameter="右轨向" :color="colorMap['右轨向']"
-                :x-axis-data="switchXAxisData" title="右轨向趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="垂直磨耗" :color="colorMap['垂直磨耗']"
-                :x-axis-data="switchXAxisData" title="垂直磨耗趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="侧面磨耗" :color="colorMap['侧面磨耗']"
-                :x-axis-data="switchXAxisData" title="侧面磨耗趋势"
-              />
+              <TrendChart :data="switchChartData" parameter="右轨向" :color="colorMap['右轨向']"
+                :x-axis-data="switchXAxisData" title="右轨向趋势" />
+              <TrendChart :data="switchChartData" parameter="垂直磨耗" :color="colorMap['垂直磨耗']"
+                :x-axis-data="switchXAxisData" title="垂直磨耗趋势" />
+              <TrendChart :data="switchChartData" parameter="侧面磨耗" :color="colorMap['侧面磨耗']"
+                :x-axis-data="switchXAxisData" title="侧面磨耗趋势" />
             </div>
             <div class="chart-row">
-              <TrendChart
-                :data="switchChartData" parameter="轨距" :color="colorMap['轨距']"
-                :x-axis-data="switchXAxisData" title="轨距趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="扭曲" :color="colorMap['扭曲']"
-                :x-axis-data="switchXAxisData" title="扭曲趋势"
-              />
-              <TrendChart
-                :data="switchChartData" parameter="曲线正矢" :color="colorMap['曲线正矢']"
-                :x-axis-data="switchXAxisData" title="曲线正矢趋势"
-              />
+              <TrendChart :data="switchChartData" parameter="轨距" :color="colorMap['轨距']" :x-axis-data="switchXAxisData"
+                title="轨距趋势" />
+              <TrendChart :data="switchChartData" parameter="扭曲" :color="colorMap['扭曲']" :x-axis-data="switchXAxisData"
+                title="扭曲趋势" />
+              <TrendChart :data="switchChartData" parameter="曲线正矢" :color="colorMap['曲线正矢']"
+                :x-axis-data="switchXAxisData" title="曲线正矢趋势" />
             </div>
           </div>
         </n-layout-content>
@@ -232,27 +218,29 @@ const trackImage = new URL('@/assets/images/switch.jpg', import.meta.url).href
 // 初始数据
 // 初始数据
 const switchChartData = ref({
+  轨距: [],
+  轨距变化率: [],
   左高低: [],
   右高低: [],
   左轨向: [],
   右轨向: [],
+  水平: [],
+  三角坑: [],
   垂直磨耗: [],
-  侧面磨耗: [],
-  轨距: [],
-  扭曲: [],
-  曲线正矢: [],
+  侧面磨耗: []
 })
 
 const colorMap = ref({
-  左高低: '#ff7f0e',
-  右高低: '#ff7f0e',
-  左轨向: '#1f77b4',
-  右轨向: '#1f77b4',
-  垂直磨耗: '#2ca02c',
-  侧面磨耗: '#2ca02c',
-  轨距: '#d62728',
-  扭曲: '#9467bd',
-  曲线正矢: '#8c564b',
+  轨距: '#ff7f0e',
+  轨距变化率: '#ff7f0e',
+  左高低: '#1f77b4',
+  右高低: '#1f77b4',
+  左轨向: '#2ca02c',
+  右轨向: '#2ca02c',
+  水平: '#d62728',
+  三角坑: '#9467bd',
+  垂直磨耗: '#8c564b',
+  侧面磨耗: '#8c564b',
 })
 
 // 初始化 X 轴数据（里程）
@@ -260,15 +248,16 @@ const switchXAxisData = ref([])
 
 // 定义随机范围
 const ranges = {
-  左高低: [1, 4],
-  右高低: [1, 4],
-  左轨向: [1, 2],
-  右轨向: [1, 2],
-  垂直磨耗: [0.5, 1],
-  侧面磨耗: [0.5, 1],
-  轨距: [1430, 1440],
-  扭曲: [1, 2],
-  曲线正矢: [115, 125],
+  轨距: [1, 4],
+  轨距变化率: [1, 4],
+  左高低: [1, 2],
+  右高低: [1, 2],
+  左轨向: [0.5, 1],
+  右轨向: [0.5, 1],
+  水平: [1430, 1440],
+  三角坑: [1, 2],
+  垂直磨耗: [115, 125],
+  侧面磨耗: [115, 125],
 }
 
 // 生成随机值的辅助函数
@@ -276,7 +265,7 @@ const getRandomValue = (min, max) => Number((Math.random() * (max - min) + min).
 
 // 初始化数据：生成 1000 个点
 function initializeData() {
-  const length = 1000 // 累计 1000 个点（500 米）
+  const length = 100 // 累计 1000 个点（500 米）
   switchXAxisData.value = Array.from(
     { length },
     (_, i) => (i * 0.5).toFixed(1), // 0.0 到 499.5

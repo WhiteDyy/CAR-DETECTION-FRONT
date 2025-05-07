@@ -29,8 +29,8 @@ export const basePermissions = [
     type: 'MENU',
     icon: 'i-fe:external-link',
     order: 98,
-    enable: true,
-    show: true,
+    enable: false,
+    show: false,
     children: [
       {
         code: 'ShowDocs',

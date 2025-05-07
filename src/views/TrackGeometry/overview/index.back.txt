@@ -1,0 +1,428 @@
+<!-- 主组件 -->
+<template>
+  <AppPage show-footer>
+    <n-card>
+
+      <template #header>
+        <div class="title-container">
+          <div class="custom-title">
+            
+            <div class="info-row" v-if="currentTab === 'main'">
+              <span>线路号： {{ mainLineInfo.lineNumber }}</span>
+              <span>行别: {{ mainLineInfo.direction }}</span>
+              <span>当前时间: {{ currentTime }}</span>
+              <span>里程: k1+100</span>
+            </div>
+            <div class="info-row" v-else>
+              <span>线路号: {{ turnoutInfo.lineNumber }}</span>
+              <span>道岔类型: {{ turnoutInfo.type }}</span>
+              <span>道岔名称: {{ turnoutInfo.name }}</span>
+              <span>当前时间: {{ currentTime }}</span>
+
+              <span>里程: k1+100</span>
+            </div>
+          </div>
+        </div>
+      </template>
+      <div v-show="currentTab === 'main'">
+
+        <n-layout has-sider>
+
+          <n-layout-sider content-style="padding: 5px;" width="100px">
+            <div class="sider-content">
+              <n-button v-for="parameter in parameterList" :key="parameter" :bordered="false"
+                style="width: 80px; height: 10px;">
+                {{ parameter }}
+              </n-button>
+            </div>
+          </n-layout-sider>
+          <n-layout>
+            <n-layout-content content-style="padding: 5px;">
+              <TrendChart :data="chartData" :parameters="parameterList" :color-map="colorMap"
+                :x-axis-data="xAxisData" />
+            </n-layout-content>
+          </n-layout>
+        </n-layout>
+      </div>
+
+    </n-card>
+
+  </AppPage>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import TrendChart from './trendChart.vue' // 导入组件
+import RouteMonitor from '@/views/task-manage/task-show/RouteMonitor.vue' // 导入组件;
+
+
+
+const mainLineInfo = ref({
+  lineNumber: 'L001',
+  direction: '上行',
+});
+const turnoutInfo = ref({
+  lineNumber: 'L001',
+  type: '60kg/m',
+  name: 'SC330',
+});
+
+// 道岔型号选项
+const directionOptions = [
+  { label: '12号道岔', value: 'turnout1', turnoutName: 'SC330', type: '60kg/m' },
+  { label: '14号道岔', value: 'turnout2', turnoutName: 'CZ577', type: '50kg/m' },
+];
+
+// 获取道岔类型和名称
+const getTurnoutLabelAndName = (type) => {
+  const option = directionOptions.find(opt => opt.value === type);
+  return option ? `${option.label} (${option.turnoutName})` : '';
+};
+
+// 当前时间
+const currentTime = ref('');
+const updateTime = () => {
+  const now = new Date();
+  currentTime.value = now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
+
+// 实时更新时间
+const timer = setInterval(updateTime, 1000);
+
+
+// 控制弹窗显示
+const showModal = ref(false);
+
+const routeData = ref({
+  nodes: [],
+  connections: []
+});
+const currentMileage = ref(0);
+const maxMileage = ref(0);
+
+// 从本地加载数据
+const loadFromLocal = () => {
+  const savedData = localStorage.getItem('routeData');
+  if (savedData) {
+    const data = JSON.parse(savedData);
+    routeData.value = {
+      nodes: data.nodes,
+      connections: data.connections
+    };
+    // 计算最大里程
+    maxMileage.value = Math.max(...data.nodes.map(node => Number(node.mileage)));
+  }
+};
+
+const increaseMileage = () => {
+  if (currentMileage.value < maxMileage.value) {
+    currentMileage.value += 0.1;
+  } else {
+    currentMileage.value = 0; // 重置
+  }
+};
+
+
+// tab切换状态
+const currentTab = ref('main')
+// 切换tab的方法
+function toggleTab() {
+  currentTab.value = currentTab.value === 'main' ? 'switch' : 'main'
+}
+
+
+
+const trackImage = new URL('@/assets/images/switch.jpg', import.meta.url).href
+// 参数列表
+const parameterList = ref([
+  '轨距',
+  '轨距变化率',
+  '左高低',
+  '右高低',
+  '左轨向',
+  '右轨向',
+  '水平',
+  '三角坑',
+  '垂直磨耗',
+  '侧面磨耗',
+])
+
+
+// 颜色映射
+const colorMap = {
+  轨距: '#ff7f0e',
+  轨距变化率: '#ff7f0e',
+  左高低: '#1f77b4',
+  右高低: '#1f77b4',
+  左轨向: '#2ca02c',
+  右轨向: '#2ca02c',
+  水平: '#d62728',
+  三角坑: '#9467bd',
+  垂直磨耗: '#8c564b',
+  侧面磨耗: '#8c564b',
+}
+
+// X 轴数据（里程）
+const xAxisData = ref([])
+
+// 图表数据（Y 值）
+const chartData = ref({
+  轨距: [],
+  轨距变化率: [],
+  左高低: [],
+  右高低: [],
+  左轨向: [],
+  右轨向: [],
+  水平: [],
+  三角坑: [],
+  垂直磨耗: [],
+  侧面磨耗: [],
+})
+
+// 更新图表数据的函数
+// function updateChartData(newData) {
+//   xAxisData.value.push(newData.mileage);
+//   chartData.value['左高低'].push(newData.lHl);
+//   chartData.value['右高低'].push(newData.hHl);
+//   chartData.value['左轨向'].push(newData.lTd);
+//   chartData.value['右轨向'].push(newData.hTd);
+//   chartData.value['垂直磨耗'].push(newData.abrasion);
+//   chartData.value['侧面磨耗'].push(newData.abrasion);
+//   chartData.value['轨距'].push(newData.track);
+//   chartData.value['扭曲'].push(newData.twist || null);
+//   chartData.value['曲线正矢'].push(newData.curve || null);
+// }
+
+function updateChartData(newData) {
+  xAxisData.value.push(newData.mileage);
+  // 假设 newData 包含与 chartData 对应的字段
+  chartData.value['轨距'].push(newData.track || null);
+  chartData.value['轨距变化率'].push(newData.trackChangeRate || null);
+  chartData.value['左高低'].push(newData.lHl || null);
+  chartData.value['右高低'].push(newData.hHl || null);
+  chartData.value['左轨向'].push(newData.lTd || null);
+  chartData.value['右轨向'].push(newData.hTd || null);
+  chartData.value['水平'].push(newData.level || null);
+  chartData.value['三角坑'].push(newData.trianglePit || null);
+  chartData.value['垂直磨耗'].push(newData.verticalAbrasion || null);
+  chartData.value['侧面磨耗'].push(newData.sideAbrasion || null);
+}
+
+
+function simulateDataUpdate() {
+  const sampleData = [];
+  const totalPoints = 20;
+  const mileageStep = 200000; // 步长200米（200000毫米）
+
+  for (let i = 0; i < totalPoints; i++) {
+    const mileage = i * mileageStep; // 0, 200000, 400000, ..., 3800000
+    const data = {
+      mileage,
+      track: 1435 + Math.round(Math.random() * 4 - 2), // 轨距：1433~1437mm
+      trackChangeRate: Math.random() * 0.2 - 0.1, // 轨距变化率：-0.1~0.1
+      lHl: 2 + Math.random() * 2,
+      hHl: 2 + Math.random() * 2,
+      lTd: 1 + Math.random() * 1,
+      hTd: 1 + Math.random() * 1,
+      abrasion: 0.5 + Math.random() * 0.5,
+      track: 1435 + Math.round(Math.random() * 4 - 2),
+      twist: 1 + Math.random() * 1,
+      curve: 120 + Math.random() * 10,
+      level: Math.random() * 2 - 1, // 水平：-1~1
+      trianglePit: Math.random() * 0.5, // 三角坑：0~0.5
+      verticalAbrasion: 0.5 + Math.random() * 0.5, // 垂直磨耗：0.5~1
+      sideAbrasion: 0.3 + Math.random() * 0.3, // 侧面磨耗：0.3~0.6
+    };
+    sampleData.push(data);
+  }
+
+  sampleData.forEach(data => updateChartData(data));
+}
+
+// Dialog相关
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+
+
+
+
+
+
+// 加载本地数据
+const loadTimeLineFromLocal = () => {
+  const savedData = localStorage.getItem('routeData');
+  if (savedData) {
+    const data = JSON.parse(savedData);
+    nodes.value = data.nodes; // 恢复时间线节点
+  }
+};
+
+
+
+// 初始化 Canvas 上下文
+onMounted(() => {
+
+  loadFromLocal()
+
+  simulateDataUpdate()
+})
+</script>
+
+<style scoped>
+.sider-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 820px;
+  padding-top: 42px;
+  padding-bottom: 14px;
+}
+
+.custom-title {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding: 0px 0px;
+}
+
+n-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  /* 示例高度，可根据需要调整 */
+  width: 100%;
+}
+
+.main-card {
+  margin: 6px;
+  /* 卡片外边距 */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+  padding: 6px;
+  /* 内部间距 */
+}
+
+.flex-container {
+  display: flex;
+  justify-content: space-between;
+  /* 左右靠边，中间拉伸 */
+  align-items: flex-start;
+  /* 顶部对齐 */
+  gap: 16px;
+  /* 元素间距 */
+  width: 100%;
+}
+
+.left-table,
+.right-table {
+  width: auto;
+  /* 自适应内容宽度 */
+  min-width: 200px;
+  /* 最小宽度，防止过窄 */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  text-align: center;
+}
+
+.svg-container {
+  flex: 1;
+  /* 图片容器占据剩余空间 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+  /* 图片最大宽度 */
+}
+
+.background {
+  width: 100%;
+  /* 图片宽度自适应容器 */
+  max-width: 800px;
+  /* 保持最大宽度限制 */
+  height: auto;
+}
+
+td {
+  padding: 6px 8px;
+  white-space: nowrap;
+  /* 防止值换行 */
+}
+
+.modal-content {
+  display: flex;
+  justify-content: center;
+  /* 水平居中 */
+  align-items: center;
+  /* 垂直居中 */
+  /* height: 200px; */
+  /* 自定义弹窗内容高度，可调整 */
+}
+
+/* 可选：调整 route-monitor 内容缩放 */
+.modal-content route-monitor {
+  transform: scale(0.9);
+  /* 按需调整内容大小 */
+}
+
+
+.title-container {
+  display: flex;
+  justify-content: center;
+  /* 水平居中 */
+  align-items: center;
+  width: 600px;
+  height: 50px;
+  /* 固定宽度 */
+  margin: 0 auto;
+  /* 居中 */
+  padding: 2px;
+  background: #ffffff;
+  /* 卡片背景 */
+  border-radius: 8px;
+  /* 圆角 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* 阴影 */
+  border: 1px solid #e8e8e8;
+  /* 边框 */
+}
+
+.custom-title {
+  font-size: 16px;
+  /* 字体小以适应单行 */
+  font-weight: 500;
+  color: #333;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  /* 元素均匀分布 */
+  align-items: center;
+  gap: 8px;
+  /* 元素间距 */
+}
+
+.info-row span {
+  flex: 1;
+  /* 均分空间 */
+  text-align: center;
+  /* 文本居中 */
+  white-space: nowrap;
+  /* 防止换行 */
+  overflow: hidden;
+  /* text-overflow: ellipsis; */
+  /* 超长文本显示省略号 */
+}
+</style>
