@@ -5,12 +5,17 @@
             <n-tooltip trigger="hover">
                 <template #trigger>
                     <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
-                        @click="toggleSearchForm">
-                        SC330 道岔道尺报表
+                        @click="switchTurnoutModel">
+                        {{ currentModel }} 道岔道尺报表
                     </div>
                 </template>
                 点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
             </n-tooltip>
+            <n-dropdown trigger="click" :options="dropdownOptions" @select="handleDropdownSelect">
+                <n-button style="margin-left: 16px;" type="primary">
+                    切换表格
+                </n-button>
+            </n-dropdown>
         </div>
         <n-data-table :columns="columns" :data="data" :bordered="true" :single-line="false" :max-height="600" />
 
@@ -22,8 +27,39 @@ import { h, ref, computed } from 'vue'
 import { NButton, NTooltip } from 'naive-ui'
 
 
-// 控制搜索表单显示状态
-const showSearchForm = ref(false)
+
+// 道岔型号列表
+const turnoutModels = ['SC330', 'SC400', 'SC500'];
+
+// 当前选中的道岔型号索引
+const currentModelIndex = ref(0);
+
+// 计算属性：根据当前索引获取当前道岔型号
+const currentModel = computed(() => turnoutModels[currentModelIndex.value]);
+
+// 下拉菜单选项：将道岔型号映射为下拉菜单的选项格式
+const dropdownOptions = turnoutModels.map(model => ({
+    label: model,
+    key: model
+}));
+
+// 切换道岔型号（用于标题点击）：循环切换到下一个型号
+const switchTurnoutModel = () => {
+    currentModelIndex.value = (currentModelIndex.value + 1) % turnoutModels.length;
+    fetchDataForModel(currentModel.value);
+};
+
+// 处理下拉菜单选择：根据选中的型号更新索引并获取数据
+const handleDropdownSelect = (key) => {
+    currentModelIndex.value = turnoutModels.indexOf(key);
+    fetchDataForModel(key);
+};
+
+// 获取数据的占位函数（需实现具体逻辑）
+const fetchDataForModel = (model) => {
+    console.log(`Fetching data for turnout model: ${model}`);
+    // 在此处实现根据道岔型号获取数据的逻辑，例如调用API
+};
 
 // 切换搜索表单显示状态
 function toggleSearchForm() {
