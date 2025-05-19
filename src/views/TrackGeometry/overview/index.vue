@@ -22,7 +22,6 @@
             </div>
 
 
-            <!-- <TrendChart :data="chartData" :parameters="parameterList" :color-map="colorMap" :x-axis-data="xAxisData" /> -->
             <TrendChart :data="chartData" :parameters="parameterList" :colorMap="colorMap" :xAxisData="xAxisData"
                 :tagPositions="tagPositions" :sleeperPositions="sleeperPositions" :kmPositions="kmPositions" />
         </div>
@@ -112,46 +111,11 @@ function updateChartData(newData) {
     chartData.value['侧面磨耗'].push(newData.sideAbrasion || null);
 }
 
-// function simulateDataUpdate() {
-//     const sampleData = [];
-//     const totalPoints = 200;
-//     const mileageStep = 1; // 步长200米
 
-//     for (let i = 0; i < totalPoints; i++) {
-//         const mileage = i * mileageStep;
-//         const data = {
-//             mileage,
-//             track: 1435 + Math.round(Math.random() * 4 - 2), // 轨距：1433~1437mm
-//             trackChangeRate: Math.random() * 0.2 - 0.1, // 轨距变化率：-0.1~0.1
-//             lHl: 2 + Math.random() * 2,
-//             hHl: 2 + Math.random() * 2,
-//             lTd: 1 + Math.random() * 1,
-//             hTd: 1 + Math.random() * 1,
-//             abrasion: 0.5 + Math.random() * 0.5,
-//             track: 1435 + Math.round(Math.random() * 4 - 2),
-//             twist: 1 + Math.random() * 1,
-//             curve: 120 + Math.random() * 10,
-//             level: Math.random() * 2 - 1, // 水平：-1~1
-//             trianglePit: Math.random() * 0.5, // 三角坑：0~0.5
-//             verticalAbrasion: 0.5 + Math.random() * 0.5, // 垂直磨耗：0.5~1
-//             sideAbrasion: 0.3 + Math.random() * 0.3, // 侧面磨耗：0.3~0.6
-//         };
-//         sampleData.push(data);
-//     }
-
-//     sampleData.forEach(data => updateChartData(data));
-// }
-
-
-// // 初始化 Canvas 上下文
-// onMounted(() => {
-
-
-//     simulateDataUpdate()
-// })
 
 let currentMileage = 0;
 let intervalId;
+
 
 // Function to generate and update a single data point
 function generateDataPoint() {
