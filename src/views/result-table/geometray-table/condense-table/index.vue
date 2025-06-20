@@ -50,26 +50,43 @@
             </n-grid>
         </n-form>
 
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" />
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
 <script setup>
-import { h, ref, computed } from 'vue'
-import { NButton, NTooltip } from 'naive-ui'
-
+import { h, onMounted, ref, nextTick } from 'vue'
+import { NButton, NTooltip, NForm, NFormItemGi, NGrid, NInput, NSpace } from 'naive-ui'
+import api from './api'
 
 // 控制搜索表单显示状态
-const showSearchForm = ref(false)
+const showSearchForm = ref(true)
 
 // 切换搜索表单显示状态
 function toggleSearchForm() {
     showSearchForm.value = !showSearchForm.value
 }
 
+// 搜索表单数据
+const searchForm = ref({
+    lineNo: '',
+    lineName: '',
+    startMileage: '',
+    endMileage: '',
+    direction: '',
+    curveDirection: '',
+    gaugeType: '',
+    pageNo: 1,
+    pageSize: 10
+})
 
-// 定义表格列
+// 表格数据和加载状态
+const tableData = ref([])
+const loading = ref(false)
+
 // 定义表格列
 const columns = [
     {
@@ -90,88 +107,108 @@ const columns = [
     },
     { title: '标示里程 (km)', align: 'center', key: 'indicatedMileage', width: 120 },
     { title: '实测轨距 (mm)', align: 'center', key: 'actualGauge', width: 120 },
-    { title: '轨距变化率 (mm)', align: 'center', key: 'gaugeChangeRate', width: 120 },
+    // { title: '轨距变化率 (mm)', align: 'center', key: 'gaugeChangeRate', width: 120 },
     { title: '实测水平 (mm)', align: 'center', key: 'actualLevel', width: 120 },
     { title: '三角坑 (mm)', align: 'center', key: 'triangularPit', width: 120 },
     { title: '实测右高低 (mm)', align: 'center', key: 'rightHeight', width: 120 },
     { title: '实测右轨向 (正矢) (mm)', align: 'center', key: 'rightTrackDirection', width: 140 },
     { title: '实测左高低 (mm)', align: 'center', key: 'leftHeight', width: 120 },
     { title: '实测左轨向 (正矢) (mm)', align: 'center', key: 'leftTrackDirection', width: 140 },
-    { title: '左轨横向调整量 (mm)', align: 'center', key: 'leftTrackAdjustment', width: 140 },
-    { title: '右轨横向调整量 (mm)', align: 'center', key: 'rightTrackAdjustment', width: 140 },
+    // { title: '左轨横向调整量 (mm)', align: 'center', key: 'leftTrackAdjustment', width: 140 },
+    // { title: '右轨横向调整量 (mm)', align: 'center', key: 'rightTrackAdjustment', width: 140 },
 ]
 
-// 生成假数据
-const tableData = Array.from({ length: 15 }, (_, index) => ({
-    actualMileage: (100.12345 + index * 0.1).toFixed(5),
-    indicatedMileage: (100.22345 + index * 0.1).toFixed(5),
-    actualGauge: (1435 + index * 0.5).toFixed(2),
-    gaugeChangeRate: (0.1 + index * 0.05).toFixed(2),
-    actualLevel: (0 + index * 0.2).toFixed(2),
-    triangularPit: (0 + index * 0.3).toFixed(2),
-    rightHeight: (0 + index * 0.4).toFixed(2),
-    rightTrackDirection: (0 + index * 0.5).toFixed(2),
-    leftHeight: (0 + index * 0.4).toFixed(2),
-    leftTrackDirection: (0 + index * 0.5).toFixed(2),
-    leftTrackAdjustment: (0 + index * 0.2).toFixed(2),
-    rightTrackAdjustment: (0 + index * 0.2).toFixed(2),
-}))
-
 // 分页配置
-const pagination = {
+// 分页配置
+const pagination = ref(reactive({
+    pageNo: 1,
     pageSize: 10,
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        console.log('切换页面到:', pageNo);
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        console.log('每页条数变更为:', pageSize);
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
+
+// 获取数据
+async function fetchData() {
+    loading.value = true
+    try {
+        const params = {
+            line_no: searchForm.value.lineNo,
+            line_name: searchForm.value.lineName,
+            start_mileage: searchForm.value.startMileage,
+            end_mileage: searchForm.value.endMileage,
+            direction: searchForm.value.direction,
+            curve_direction: searchForm.value.curveDirection,
+            gauge_type: searchForm.value.gaugeType,
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
+        }
+        const response = await api.getCondense(params)
+
+        tableData.value = (response.data.pageData || []).map(item => ({
+            actualMileage: item.actualMileage || '',
+            indicatedMileage: item.indicatedMileage || '',
+            actualGauge: item.actualGauge || '',
+            gaugeChangeRate: item.gaugeChangeRate || '',
+            actualLevel: item.actualLevel || '',
+            triangularPit: item.triangularPit || '',
+            rightHeight: item.rightHeight || '',
+            rightTrackDirection: item.rightTrackDirection || '',
+            leftHeight: item.leftHeight || '',
+            leftTrackDirection: item.leftTrackDirection || '',
+            leftTrackAdjustment: item.leftTrackAdjustment || '',
+            rightTrackAdjustment: item.rightTrackAdjustment || ''
+        }))
+         pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick()
+        pagination.value = { ...pagination.value }
+    } catch (error) {
+         tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+    } finally {
+        loading.value = false
+    }
 }
 
-// 搜索表单数据
-const searchForm = ref({
-    lineNo: '',
-    lineName: '',
-    startMileage: '',
-    endMileage: '',
-    direction: '',
-    curveDirection: '',
-    gaugeType: '',
-})
-
-// 过滤后的数据
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        const {
-            lineNo,
-            lineName,
-            startMileage,
-            endMileage,
-            direction,
-            curveDirection,
-            gaugeType,
-        } = searchForm.value
-
-        return (
-            (!lineNo || item.lineNo.toLowerCase().includes(lineNo.toLowerCase())) &&
-            (!lineName || item.lineName.toLowerCase().includes(lineName.toLowerCase())) &&
-            (!startMileage || Number(item.startMileage) >= Number(startMileage)) &&
-            (!endMileage || Number(item.endMileage) <= Number(endMileage)) &&
-            (!direction || item.direction.toLowerCase().includes(direction.toLowerCase())) &&
-            (!curveDirection || item.curveDirection.toLowerCase().includes(curveDirection.toLowerCase())) &&
-            (!gaugeType || item.gaugeType.toLowerCase().includes(gaugeType.toLowerCase()))
-        )
-    })
-})
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
+// 搜索
+async function handleSearch() {
+    searchForm.value.page = 1
+    await fetchData()
 }
 
-function resetSearch() {
+// 重置
+async function resetSearch() {
     searchForm.value = {
         lineNo: '',
         lineName: '',
         startMileage: '',
         endMileage: '',
-        idom: '',
+        direction: '',
         curveDirection: '',
         gaugeType: '',
+        pageNo: 1,
+        pageSize: 10
     }
+    await fetchData()
 }
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData()
+})
 </script>

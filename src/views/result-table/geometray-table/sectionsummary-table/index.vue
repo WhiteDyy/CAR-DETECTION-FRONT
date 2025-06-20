@@ -1,243 +1,145 @@
-<!-- <template>
+<template>
     <CommonPage>
-
+        <!-- 表格标题与提示 -->
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
                     <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
                         @click="toggleSearchForm">
-                        曲线查询表
+                        区段小结报表
                     </div>
                 </template>
                 点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
+
             </n-tooltip>
         </div>
 
+        <!-- 搜索表单 -->
         <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
             :style="{ marginBottom: '16px' }">
             <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi label="线编号">
-                    <n-input v-model:value="searchForm.lineNo" placeholder="请输入线编号" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="线路名">
-                    <n-input v-model:value="searchForm.lineName" placeholder="请输入线路名" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="起点里程">
-                    <n-input v-model:value="searchForm.startMileage" placeholder="请输入起点里程" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="终点里程">
-                    <n-input v-model:value="searchForm.endMileage" placeholder="请输入终点里程" clearable />
+                <n-form-item-gi label="线路名称">
+                    <n-input v-model:value="searchForm.lineInfoLabel" placeholder="请输入线路名称" clearable />
                 </n-form-item-gi>
                 <n-form-item-gi label="行别">
-                    <n-input v-model:value="searchForm.direction" placeholder="请输入行别" clearable />
+                    <n-input v-model:value="searchForm.lineInfoValue" placeholder="请输入行别" clearable />
                 </n-form-item-gi>
-                <n-form-item-gi label="曲线方向">
-                    <n-input v-model:value="searchForm.curveDirection" placeholder="请输入曲线方向" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="轨距类型">
-                    <n-input v-model:value="searchForm.gaugeType" placeholder="请输入轨距类型" clearable />
+                <n-form-item-gi label="检测日期">
+                    <n-date-picker v-model:value="searchForm.inspectionDate" type="datetime" clearable
+                        :value-format="'yyyy-MM-dd HH:mm:ss'" :disabled="isDateInvalid" />
                 </n-form-item-gi>
                 <n-form-item-gi>
                     <n-space>
-                        <n-button type="primary" @click="handleSearch">
-                            搜索
-                        </n-button>
-                        <n-button @click="resetSearch">
-                            重置
-                        </n-button>
+                        <n-button type="primary" @click="handleSearch">搜索</n-button>
+                        <n-button @click="resetSearch">重置</n-button>
                     </n-space>
                 </n-form-item-gi>
             </n-grid>
         </n-form>
 
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" />
-    </CommonPage>
-</template>
-
-<script setup>
-import { h, ref, computed } from 'vue'
-import { NButton, NTooltip } from 'naive-ui'
-
-
-
-const showSearchForm = ref(false)
-
-
-function toggleSearchForm() {
-    showSearchForm.value = !showSearchForm.value
-}
-
-
-
-const columns = [
-    {
-        title: '线编号',
-        key: 'lineNo',
-        width: 120,
-        render: row =>
-            h(
-                NTooltip,
-                { trigger: 'hover' },
-                {
-                    default: () => row.lineNo,
-                    trigger: () =>
-                        h('span', { style: { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, row.lineNo),
-                },
-            ),
-    },
-    { title: '行别', key: 'direction', width: 100 },
-    { title: '线路名', key: 'lineName', width: 150 },
-    { title: '起点里程', key: 'startMileage', width: 120 },
-    { title: '终点里程', key: 'endMileage', width: 120 },
-    { title: '曲线方向', key: 'curveDirection', width: 120 },
-    { title: '曲线半径', key: 'curveRadius', width: 120 },
-    { title: '转向角', key: 'turningAngle', width: 100 },
-    { title: '轨距类型', key: 'gaugeType', width: 120 },
-    { title: '轨距加宽', key: 'gaugeWidening', width: 120 },
-    { title: '超高', key: 'superelevation', width: 100 },
-    { title: '顺坡率', key: 'gradientRate', width: 100 },
-    { title: '起点切线长', key: 'startTangentLength', width: 140 },
-    { title: '起缓和线长', key: 'startTransitionLength', width: 140 },
-    { title: '终缓和线长', key: 'endTransitionLength', width: 140 },
-    { title: '终点切线长', key: 'endTangentLength', width: 140 },
-    { title: '曲线全长', key: 'totalCurveLength', width: 120 },
-    { title: '平均速度', key: 'averageSpeed', width: 120 },
-]
-
-
-const tableData = Array.from({ length: 15 }, (_, index) => ({
-    lineNo: `LN00${index + 1}`,
-    direction: index % 2 === 0 ? '上行' : '下行',
-    lineName: `线路${index + 1}`,
-    startMileage: (100.12345 + index * 10).toFixed(5),
-    endMileage: (110.12345 + index * 10).toFixed(5),
-    curveDirection: index % 2 === 0 ? '左曲' : '右曲',
-    curveRadius: (500 + index * 50).toFixed(2),
-    turningAngle: (15 + index * 2).toFixed(2),
-    gaugeType: `GT${index % 3 + 1}`,
-    gaugeWidening: (5 + index * 0.5).toFixed(2),
-    superelevation: (100 + index * 10).toFixed(2),
-    gradientRate: (0.5 + index * 0.1).toFixed(2),
-    startTangentLength: (50 + index * 5).toFixed(2),
-    startTransitionLength: (30 + index * 3).toFixed(2),
-    endTransitionLength: (30 + index * 3).toFixed(2),
-    endTangentLength: (50 + index * 5).toFixed(2),
-    totalCurveLength: (200 + index * 20).toFixed(2),
-    averageSpeed: (80 + index * 5).toFixed(2),
-}))
-
-
-const pagination = {
-    pageSize: 10,
-}
-
-
-const searchForm = ref({
-    lineNo: '',
-    lineName: '',
-    startMileage: '',
-    endMileage: '',
-    direction: '',
-    curveDirection: '',
-    gaugeType: '',
-})
-
-
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        const {
-            lineNo,
-            lineName,
-            startMileage,
-            endMileage,
-            direction,
-            curveDirection,
-            gaugeType,
-        } = searchForm.value
-
-        return (
-            (!lineNo || item.lineNo.toLowerCase().includes(lineNo.toLowerCase())) &&
-            (!lineName || item.lineName.toLowerCase().includes(lineName.toLowerCase())) &&
-            (!startMileage || Number(item.startMileage) >= Number(startMileage)) &&
-            (!endMileage || Number(item.endMileage) <= Number(endMileage)) &&
-            (!direction || item.direction.toLowerCase().includes(direction.toLowerCase())) &&
-            (!curveDirection || item.curveDirection.toLowerCase().includes(curveDirection.toLowerCase())) &&
-            (!gaugeType || item.gaugeType.toLowerCase().includes(gaugeType.toLowerCase()))
-        )
-    })
-})
-
-
-function handleSearch() {
-
-}
-
-function resetSearch() {
-    searchForm.value = {
-        lineNo: '',
-        lineName: '',
-        startMileage: '',
-        endMileage: '',
-        idom: '',
-        curveDirection: '',
-        gaugeType: '',
-    }
-}
-</script> -->
-
-
-<template>
-    <CommonPage>
-        <div>
-            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
-                <n-tooltip trigger="hover">
-                    <template #trigger>
-                        <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
-                            @click="toggleSearchForm">
-                            区段小结报表
-                        </div>
-                    </template>
-                    点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
-                </n-tooltip>
-            </div>
-
-            <div class="report-info">
-                <div>区段起点: {{ reportInfo.startPoint }}</div>
-                <div>区段终点: {{ reportInfo.endPoint }}</div>
-                <div>检察人员: {{ reportInfo.inspector }}</div>
-                <div>检测日期: {{ reportInfo.inspectionDate }}</div>
-                <div>{{ reportInfo.lineInfoLabel }}: {{ reportInfo.lineInfoValue }}</div>
-            </div>
-
-            <n-data-table :columns="columns" :data="data" :bordered="true" :single-line="false" />
+        <!-- 报表顶部信息 -->
+        <div class="report-info">
+            <div>区段起点: {{ reportInfo.startPoint }}</div>
+            <div>区段终点: {{ reportInfo.endPoint }}</div>
+            <div>检察人员: {{ reportInfo.inspector }}</div>
+            <div>检测日期: {{ reportInfo.inspectionDate }}</div>
+            <div>{{ reportInfo.lineInfoLabel }}: {{ reportInfo.lineInfoValue }}</div>
         </div>
-    </CommonPage>
 
+        <!-- 表格 -->
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
+    </CommonPage>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { NDataTable } from 'naive-ui';
+import { ref, onMounted, nextTick } from 'vue';
+import { NButton, NTooltip, NForm, NFormItemGi, NGrid, NInput, NDatePicker, NDataTable } from 'naive-ui';
+import api from './api';
 
-// 定义表格的列配置 (纯 JavaScript 对象数组)
+// 控制搜索表单显示状态
+const showSearchForm = ref(true);
+
+// 是否禁用日期选择器
+const isDateInvalid = ref(false);
+
+// 搜索表单数据
+const searchForm = ref({
+    lineInfoLabel: '',
+    lineInfoValue: '',
+    inspectionDate: null,
+    pageNo: 1,
+    pageSize: 10
+});
+
+// 报表顶部信息
+const reportInfo = ref({
+    startPoint: '',
+    endPoint: '',
+    inspector: '',
+    inspectionDate: '',
+    lineInfoLabel: '',
+    lineInfoValue: ''
+});
+
+// 表格数据和加载状态
+const tableData = ref([]);
+const loading = ref(false);
+
+// 分页配置
+const pagination = ref(reactive({
+    pageNo: 1,
+    pageSize: 10,
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
+
+// 日期格式转换工具函数
+function parseDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') {
+        console.warn(`无效的日期输入: ${dateStr}`);
+        return null;
+    }
+    const parsed = new Date(Date.parse(dateStr));
+    if (!isNaN(parsed.getTime())) {
+        return parsed.getTime();
+    }
+    console.warn(`无法解析的日期格式: ${dateStr}`);
+    return null;
+}
+
+// 定义表格的列配置
 const columns = [
     {
-        title: '项目', // 左侧第一列的标题
+        title: '项目',
         key: 'itemName',
-        fixed: 'left', // 固定在左侧，可选
-        width: 100 // 可选：设置列宽
+        fixed: 'left',
+        width: 100
     },
     {
         title: '作业验收',
-        key: 'jobAcceptance', // 父级列的 key，不直接对应数据
-        align: 'center', // 父级列标题居中
+        key: 'jobAcceptance',
+        align: 'center',
         children: [
             {
                 title: '点数',
                 key: 'jobPoints',
-                width: 80, // 可选：设置列宽
-                align: 'center' // 内容居中
+                width: 80,
+                align: 'center'
             },
             {
                 title: '延长',
@@ -318,178 +220,123 @@ const columns = [
     }
 ];
 
-// 定义表格数据，使用 ref 使其具有响应性 (纯 JavaScript 对象数组)
-const data = ref([
-    {
-        key: 1,
-        itemName: '轨距',
-        jobPoints: 10,
-        jobExtension: 5,
-        compPoints: 8,
-        compExtension: 4,
-        tempPoints: 2,
-        tempExtension: 1,
-        level4Points: 1,
-        level4Extension: 0.5,
-        deduction: 2,
-        percentage: '98%',
-    },
-    {
-        key: 2,
-        itemName: '轨距变化率',
-        jobPoints: 12,
-        jobExtension: 6,
-        compPoints: 9,
-        compExtension: 4.5,
-        tempPoints: 3,
-        tempExtension: 1.5,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 1,
-        percentage: '99%',
-    },
-    {
-        key: 3,
-        itemName: '水平',
-        jobPoints: 15,
-        jobExtension: 7.5,
-        compPoints: 10,
-        compExtension: 5,
-        tempPoints: 1,
-        tempExtension: 0.5,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 0,
-        percentage: '100%',
-    },
-    {
-        key: 4,
-        itemName: '三角坑',
-        jobPoints: 5,
-        jobExtension: 2.5,
-        compPoints: 3,
-        compExtension: 1.5,
-        tempPoints: 0,
-        tempExtension: 0,
-        level4Points: 2,
-        level4Extension: 1,
-        deduction: 5,
-        percentage: '95%',
-    },
-    {
-        key: 5,
-        itemName: '右高低',
-        jobPoints: 8,
-        jobExtension: 4,
-        compPoints: 6,
-        compExtension: 3,
-        tempPoints: 1,
-        tempExtension: 0.5,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 1,
-        percentage: '99%',
-    },
-    {
-        key: 6,
-        itemName: '右轨向',
-        jobPoints: 7,
-        jobExtension: 3.5,
-        compPoints: 5,
-        compExtension: 2.5,
-        tempPoints: 0,
-        tempExtension: 0,
-        level4Points: 1,
-        level4Extension: 0.5,
-        deduction: 2,
-        percentage: '98%',
-    },
-    {
-        key: 7,
-        itemName: '右正矢',
-        jobPoints: 6,
-        jobExtension: 3,
-        compPoints: 4,
-        compExtension: 2,
-        tempPoints: 0,
-        tempExtension: 0,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 0,
-        percentage: '100%',
-    },
-    {
-        key: 8,
-        itemName: '左高低',
-        jobPoints: 9,
-        jobExtension: 4.5,
-        compPoints: 7,
-        compExtension: 3.5,
-        tempPoints: 1,
-        tempExtension: 0.5,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 1,
-        percentage: '99%',
-    },
-    {
-        key: 9,
-        itemName: '左轨向',
-        jobPoints: 8,
-        jobExtension: 4,
-        compPoints: 6,
-        compExtension: 3,
-        tempPoints: 0,
-        tempExtension: 0,
-        level4Points: 1,
-        level4Extension: 0.5,
-        deduction: 2,
-        percentage: '98%',
-    },
-    {
-        key: 10,
-        itemName: '左正矢',
-        jobPoints: 7,
-        jobExtension: 3.5,
-        compPoints: 5,
-        compExtension: 2.5,
-        tempPoints: 0,
-        tempExtension: 0,
-        level4Points: 0,
-        level4Extension: 0,
-        deduction: 0,
-        percentage: '100%',
-    },
-]);
+// 获取数据
+async function fetchData() {
+    loading.value = true;
+    try {
+        const params = {
+            line_name: searchForm.value.lineInfoLabel,
+            direction: searchForm.value.lineInfoValue,
+            inspection_date: searchForm.value.inspectionDate,
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
+        };
+        const response = await api.getSectionSummary(params);
+        tableData.value = (response.data.pageData || []).map(item => ({
+            key: item.id || item.key || Date.now() + Math.random(), // 确保每行有唯一 key
+            itemName: item.itemName || '',
+            jobPoints: item.jobPoints || 0,
+            jobExtension: item.jobExtension || 0,
+            compPoints: item.compPoints || 0,
+            compExtension: item.compExtension || 0,
+            tempPoints: item.tempPoints || 0,
+            tempExtension: item.tempExtension || 0,
+            level4Points: item.level4Points || 0,
+            level4Extension: item.level4Extension || 0,
+            deduction: item.deduction || 0,
+            percentage: item.percentage || ''
+        }));
 
-// 报表顶部信息，使用 ref 使其具有响应性 (纯 JavaScript 对象)
-const reportInfo = ref({
-    startPoint: 'XXX',
-    endPoint: 'YYY',
-    inspector: '张三',
-    inspectionDate: '2023-10-27',
-    lineInfoLabel: 'XXX线',
-    lineInfoValue: '上行',
+        // 更新报表顶部信息
+        if (tableData.value.length > 0) {
+            const firstItem = response.data.pageData[0] || {};
+            reportInfo.value = {
+                startPoint: firstItem.startPoint || '',
+                endPoint: firstItem.endPoint || '',
+                inspector: firstItem.inspector || '',
+                inspectionDate: parseDate(firstItem.inspectionDate) || '',
+                lineInfoLabel: firstItem.lineInfoLabel || '',
+                lineInfoValue: firstItem.lineInfoValue || ''
+            };
+        } else {
+            reportInfo.value = {
+                startPoint: '',
+                endPoint: '',
+                inspector: '',
+                inspectionDate: '',
+                lineInfoLabel: '',
+                lineInfoValue: ''
+            };
+        }
+        pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick();
+    } catch (error) {
+        tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+        reportInfo.value = {
+            startPoint: '',
+            endPoint: '',
+            inspector: '',
+            inspectionDate: '',
+            lineInfoLabel: '',
+            lineInfoValue: ''
+        };
+        isDateInvalid.value = false;
+    } finally {
+        loading.value = false;
+    }
+}
+
+// 搜索
+async function handleSearch() {
+    searchForm.value.pageNo = 1;
+    isDateInvalid.value = false;
+    await fetchData();
+}
+
+// 重置
+async function resetSearch() {
+    searchForm.value = {
+        lineInfoLabel: '',
+        lineInfoValue: '',
+        inspectionDate: null,
+        pageNo: 1,
+        pageSize: 10
+    };
+    reportInfo.value = {
+        startPoint: '',
+        endPoint: '',
+        inspector: '',
+        inspectionDate: '',
+        lineInfoLabel: '',
+        lineInfoValue: ''
+    };
+    isDateInvalid.value = false;
+    await fetchData();
+}
+
+// 切换搜索表单显示状态
+function toggleSearchForm() {
+    showSearchForm.value = !showSearchForm.value;
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData();
 });
-
 </script>
 
 <style scoped>
-/* 为报表顶部信息添加一些样式 */
 .report-info {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    /* 响应式布局 */
     gap: 10px;
     margin-bottom: 20px;
     padding: 10px;
     border: 1px solid #eee;
     border-radius: 5px;
     background-color: #f9f9f9;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
 }
 </style>

@@ -13,14 +13,19 @@
             </n-tooltip>
         </div>
 
-
-        <!-- 检查信息展示（单独区域） -->
+        <!-- 检查信息展示 -->
         <n-card title="检查信息" v-if="showSearchForm" :bordered="true" style="margin-bottom: 16px;">
             <n-form :model="inspectionInfo" label-placement="left" label-width="auto">
                 <n-grid :cols="5" :x-gap="12" :y-gap="8">
                     <n-grid-item>
                         <n-form-item label="检查日期">
-                            <n-date-picker v-model:value="inspectionInfo.inspectionDate" type="datetime" clearable />
+                            <n-date-picker 
+                                v-model:value="inspectionInfo.inspectionDate" 
+                                type="datetime" 
+                                clearable 
+                                :value-format="'yyyy-MM-dd HH:mm:ss'" 
+                                :disabled="isDateInvalid"
+                            />
                         </n-form-item>
                     </n-grid-item>
                     <n-grid-item>
@@ -34,6 +39,11 @@
                         </n-form-item>
                     </n-grid-item>
                     <n-grid-item>
+                        <n-form-item label="序号">
+                            <n-input v-model:value="inspectionInfo.number" placeholder="请输入序号" clearable />
+                        </n-form-item>
+                    </n-grid-item>
+                    <!-- <n-grid-item>
                         <n-form-item label="上下行">
                             <n-input v-model:value="inspectionInfo.direction" placeholder="请输入上下行" clearable />
                         </n-form-item>
@@ -42,15 +52,11 @@
                         <n-form-item label="X米弦">
                             <n-input v-model:value="inspectionInfo.chordLength" placeholder="请输入X米弦" clearable />
                         </n-form-item>
-                    </n-grid-item>
+                    </n-grid-item> -->
                 </n-grid>
                 <n-space style="margin-top: 16px;">
-                    <n-button type="primary" @click="handleFilter">
-                        筛选
-                    </n-button>
-                    <n-button @click="resetFilter">
-                        重置
-                    </n-button>
+                    <n-button type="primary" @click="handleSearch">筛选</n-button>
+                    <n-button @click="resetSearch">重置</n-button>
                 </n-space>
             </n-form>
         </n-card>
@@ -78,10 +84,10 @@
                     <dt style="font-weight: bold; color: #333;">缓和曲线长 (m)</dt>
                     <dd>{{ inspectionInfo.transitionCurveLength }}</dd>
                 </div>
-                <div>
+                <!-- <div>
                     <dt style="font-weight: bold; color: #333;">设计超高 (mm)</dt>
                     <dd>{{ inspectionInfo.designSuperelevation }}</dd>
-                </div>
+                </div> -->
                 <div>
                     <dt style="font-weight: bold; color: #333;">Vmax (km/h)</dt>
                     <dd>{{ inspectionInfo.vmax }}</dd>
@@ -90,31 +96,62 @@
         </div>
 
         <!-- 表格 -->
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" />
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { NButton, NTooltip, NCard, NFormItem, NGrid, NGridItem, NInput } from 'naive-ui'
+import { h, onMounted, ref, nextTick } from 'vue'
+import { NButton, NTooltip, NCard, NForm, NFormItem, NGrid, NGridItem, NInput, NDatePicker } from 'naive-ui'
+import api from './api'
 
 // 控制搜索表单显示状态
-const showSearchForm = ref(false)
+const showSearchForm = ref(true)
 
-// 切换搜索表单显示状态
-function toggleSearchForm() {
-    showSearchForm.value = !showSearchForm.value
-}
-// 检查信息（假设取第一条数据）
+// 检查信息
 const inspectionInfo = ref({
-    inspectionDate: '',
+    inspectionDate: null,
     inspector: '',
     lineName: '',
     direction: '',
     chordLength: '',
+    designRadius: '',
+    actualRadius: '',
+    curveLength: '',
+    circularCurveLength: '',
+    transitionCurveLength: '',
+    designSuperelevation: '',
+    vmax: ''
 })
 
+// 是否禁用日期选择器
+const isDateInvalid = ref(false)
+
+// 搜索表单数据
+const searchForm = ref({
+    lineName: '',
+    direction: '',
+    mileage: '',
+    pageNo: 1,
+    pageSize: 10
+})
+
+// 日期格式转换工具函数
+function parseDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') {
+        console.warn(`无效的日期输入: ${dateStr}`)
+        return null
+    }
+    const parsed = new Date(Date.parse(dateStr))
+    if (!isNaN(parsed.getTime())) {
+        return parsed.getTime()
+    }
+    console.warn(`无法解析的日期格式: ${dateStr}`)
+    return null
+}
 
 // 定义表格列
 const columns = [
@@ -123,7 +160,7 @@ const columns = [
             h('div', '序号'),
         ]),
         key: 'index',
-        width: 80,
+        width: 80
     },
     {
         title: () => h('div', [
@@ -131,71 +168,7 @@ const columns = [
             h('div', { style: { fontSize: '12px', color: '#666' } }, 'km'),
         ]),
         key: 'mileage',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '计划正矢'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'plannedVector',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '实测正矢'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'actualVector',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '正矢差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'vectorDifference',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '拨量'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'adjustmentAmount',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '拨后正矢'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'postAdjustmentVector',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '实测超高'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'actualSuperelevation',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '超高差值'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
-        ]),
-        key: 'superelevationDifference',
-        width: 100,
-    },
-    {
-        title: () => h('div', [
-            h('div', '超高顺坡率'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, '‰'),
-        ]),
-        key: 'superelevationGradient',
-        width: 120,
+        width: 100
     },
     {
         title: () => h('div', [
@@ -203,124 +176,267 @@ const columns = [
             h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
         ]),
         key: 'gauge',
-        width: 100,
+        width: 100
     },
     {
         title: () => h('div', [
-            h('div', '轨距千分率'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, '‰'),
+            h('div', '设计正矢'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
         ]),
-        key: 'gaugePermillage',
-        width: 120,
+        key: 'plannedVector',
+        width: 100
     },
+    {
+        title: () => h('div', [
+            h('div', '实测正矢'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+        ]),
+        key: 'actualVector',
+        width: 100
+    },
+    {
+        title: () => h('div', [
+            h('div', '正矢差'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+        ]),
+        key: 'vectorDifference',
+        width: 100
+    },
+    // {
+    //     title: () => h('div', [
+    //         h('div', '拨量'),
+    //         h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+    //     ]),
+    //     key: 'adjustmentAmount',
+    //     width: 100
+    // },
+    // {
+    //     title: () => h('div', [
+    //         h('div', '拨后正矢'),
+    //         h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+    //     ]),
+    //     key: 'postAdjustmentVector',
+    //     width: 100
+    // },
+    {
+        title: () => h('div', [
+            h('div', '设计水平'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+        ]),
+        key: 'designLevation',
+        width: 100
+    },
+    {
+        title: () => h('div', [
+            h('div', '实测水平'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+        ]),
+        key: 'actualSuperelevation',
+        width: 100
+    },
+    {
+        title: () => h('div', [
+            h('div', '水平差'),
+            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+        ]),
+        key: 'superelevationDifference',
+        width: 100
+    },
+    // {
+    //     title: () => h('div', [
+    //         h('div', '超高顺坡率'),
+    //         h('div', { style: { fontSize: '12px', color: '#666' } }, '‰'),
+    //     ]),
+    //     key: 'superelevationGradient',
+    //     width: 120
+    // },
+    
+    // {
+    //     title: () => h('div', [
+    //         h('div', '轨距千分率'),
+    //         h('div', { style: { fontSize: '12px', color: '#666' } }, '‰'),
+    //     ]),
+    //     key: 'gaugePermillage',
+    //     width: 120
+    // }
 ]
 
-// 生成假数据
-const tableData = Array.from({ length: 15 }, (_, index) => {
-    const data = {
-        index: index + 1,
-        inspectionDate: `2025-05-${String(index + 1).padStart(2, '0')}`,
-        inspector: `检查员${index + 1}`,
-        lineName: `线路${index + 1}`,
-        direction: index % 2 === 0 ? '上行' : '下行',
-        chordLength: `${10 + index}米`,
-        mileage: (100 + index * 0.5).toFixed(3),
-        plannedVector: (10 + index * 0.5).toFixed(2),
-        actualVector: (10.2 + index * 0.5).toFixed(2),
-        vectorDifference: (0.2 + index * 0.1).toFixed(2),
-        adjustmentAmount: (1 + index * 0.2).toFixed(2),
-        postAdjustmentVector: (10 + index * 0.5).toFixed(2),
-        actualSuperelevation: (100 + index * 2).toFixed(2),
-        superelevationDifference: (2 + index * 0.3).toFixed(2),
-        superelevationGradient: (0.5 + index * 0.1).toFixed(2),
-        gauge: (1435 + index * 0.5).toFixed(2),
-        gaugePermillage: (0.3 + index * 0.05).toFixed(2),
-    }
-    // 设置检查信息（取第一条数据）
-    if (index === 0) {
-        inspectionInfo.value = {
-            inspectionDate: data.inspectionDate,
-            inspector: data.inspector,
-            lineName: data.lineName,
-            direction: data.direction,
-            chordLength: data.chordLength,
-            designRadius: (500 + index * 10).toFixed(2),
-            actualRadius: (505 + index * 10).toFixed(2),
-            curveLength: (200 + index * 5).toFixed(2),
-            circularCurveLength: (150 + index * 3).toFixed(2),
-            transitionCurveLength: (50 + index * 2).toFixed(2),
-            designSuperelevation: (100 + index * 2).toFixed(2),
-            vmax: (120 + index * 5).toFixed(2),
-        };
-    }
-    return data
-})
+// 表格数据和加载状态
+const tableData = ref([])
+const loading = ref(false)
 
 // 分页配置
-const pagination = {
+const pagination = ref(reactive({
+    pageNo: 1,
     pageSize: 10,
-}
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        console.log('切换页面到:', pageNo);
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        console.log('每页条数变更为:', pageSize);
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
 
-// 搜索表单数据
-const searchForm = ref({
-    lineName: '',
-    direction: '',
-    mileage: '',
-})
-
-// 过滤后的数据
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        const { lineName, direction, mileage } = searchForm.value
-        return (
-            (!lineName || item.lineName.toLowerCase().includes(lineName.toLowerCase())) &&
-            (!direction || item.direction.toLowerCase().includes(direction.toLowerCase())) &&
-            (!mileage || Number(item.mileage) >= Number(mileage))
-        )
-    })
-})
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
-    // 更新检查信息（假设取过滤后的第一条数据）
-    if (filteredData.value.length > 0) {
-        const firstItem = filteredData.value[0]
-        inspectionInfo.value = {
-            inspectionDate: firstItem.inspectionDate,
-            inspector: firstItem.inspector,
-            lineName: firstItem.lineName,
-            direction: firstItem.direction,
-            chordLength: firstItem.chordLength,
+// 获取数据
+async function fetchData() {
+    loading.value = true
+    try {
+        const params = {
+            line_name: searchForm.value.lineName,
+            direction: searchForm.value.direction,
+            mileage: searchForm.value.mileage,
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
         }
+        const response = await api.getCurseInspect(params)
+        console.log('后端返回数据:', response.data)
+
+        tableData.value = (response.data.pageData || []).map(item => {
+            const parsedDate = parseDate(item.inspectionDate)
+            if (!parsedDate && item.inspectionDate) {
+                isDateInvalid.value = true
+            }
+            return {
+                id: item.id || '',
+                index: item.indexs || '',
+                mileage: item.mileage || '',
+                plannedVector: item.plannedVector || '',
+                actualVector: item.actualVector || '',
+                vectorDifference: item.vectorDifference || '',
+                adjustmentAmount: item.adjustmentAmount || '',
+                postAdjustmentVector: item.postAdjustmentVector || '',
+                actualSuperelevation: item.actualSuperelevation || '',
+                superelevationDifference: item.superelevationDifference || '',
+                superelevationGradient: item.superelevationGradient || '',
+                gauge: item.gauge || '',
+                gaugePermillage: item.gaugePermillage || '',
+                inspectionDate: parsedDate,
+                inspector: item.inspector || '',
+                lineName: item.lineName || '',
+                direction: item.direction || '',
+                chordLength: item.chordLength || ''
+            }
+        })
+        pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick();
+        // 更新检查信息
+        if (tableData.value.length > 0) {
+            const firstItem = tableData.value[0]
+            inspectionInfo.value = {
+                inspectionDate: firstItem.inspectionDate,
+                inspector: firstItem.inspector,
+                lineName: firstItem.lineName,
+                direction: firstItem.direction,
+                chordLength: firstItem.chordLength,
+                designRadius: firstItem.designRadius || '',
+                actualRadius: firstItem.actualRadius || '',
+                curveLength: firstItem.curveLength || '',
+                circularCurveLength: firstItem.circularCurveLength || '',
+                transitionCurveLength: firstItem.transitionCurveLength || '',
+                designSuperelevation: firstItem.designSuperelevation || '',
+                vmax: firstItem.vmax || ''
+            }
+        } else {
+            inspectionInfo.value = {
+                inspectionDate: null,
+                inspector: '',
+                lineName: '',
+                direction: '',
+                chordLength: '',
+                designRadius: '',
+                actualRadius: '',
+                curveLength: '',
+                circularCurveLength: '',
+                transitionCurveLength: '',
+                designSuperelevation: '',
+                vmax: ''
+            }
+        }
+
+        await nextTick()
+        pagination.value = { ...pagination.value }
+    } catch (error) {
+        console.error('获取数据失败:', error)
+        tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+        inspectionInfo.value = {
+            inspectionDate: null,
+            inspector: '',
+            lineName: '',
+            direction: '',
+            chordLength: '',
+            designRadius: '',
+            actualRadius: '',
+            curveLength: '',
+            circularCurveLength: '',
+            transitionCurveLength: '',
+            designSuperelevation: '',
+            vmax: ''
+        }
+        isDateInvalid.value = false
+    } finally {
+        loading.value = false
     }
 }
 
-function resetSearch() {
+// 搜索
+async function handleSearch() {
+    searchForm.value.pageNo = 1
+    isDateInvalid.value = false
+    await fetchData()
+}
+
+// 重置
+async function resetSearch() {
     searchForm.value = {
         lineName: '',
         direction: '',
         mileage: '',
+        pageNo: 1,
+        pageSize: 10
     }
-    // 重置检查信息为第一条数据
-    if (tableData.length > 0) {
-        const firstItem = tableData[0]
-        inspectionInfo.value = {
-            inspectionDate: firstItem.inspectionDate,
-            inspector: firstItem.inspector,
-            lineName: firstItem.lineName,
-            direction: firstItem.direction,
-            chordLength: firstItem.chordLength,
-        }
+    inspectionInfo.value = {
+        inspectionDate: null,
+        inspector: '',
+        lineName: '',
+        direction: '',
+        chordLength: '',
+        designRadius: '',
+        actualRadius: '',
+        curveLength: '',
+        circularCurveLength: '',
+        transitionCurveLength: '',
+        designSuperelevation: '',
+        vmax: ''
     }
+    isDateInvalid.value = false
+    await fetchData()
 }
+
+// 切换搜索表单显示状态
+function toggleSearchForm() {
+    showSearchForm.value = !showSearchForm.value
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData()
+})
 </script>
 
 <style scoped>
-.track-inspection-table {
-    padding: 16px;
-}
-
 .description-list dl {
     margin: 0;
 }

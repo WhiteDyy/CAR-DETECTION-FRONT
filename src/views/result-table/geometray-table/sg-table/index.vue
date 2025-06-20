@@ -1,11 +1,10 @@
 <template>
     <CommonPage>
-
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
                     <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
-                        @click="switchTurnoutModel">
+                        @click="toggleSearchForm">
                         {{ currentModel }} 道岔道尺报表
                     </div>
                 </template>
@@ -17,16 +16,51 @@
                 </n-button>
             </n-dropdown>
         </div>
-        <n-data-table :columns="columns" :data="data" :bordered="true" :single-line="false" :max-height="600" />
 
+        <!-- 搜索表单 -->
+        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+            :style="{ marginBottom: '16px' }">
+            <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                <n-form-item-gi label="道尺号">
+                    <n-input v-model:value="searchForm.point" placeholder="请输入道尺号" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="位置">
+                    <n-input v-model:value="searchForm.position" placeholder="请输入位置" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="轨向">
+                    <n-input v-model:value="searchForm.direction" placeholder="请输入轨向" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="轨枕序号">
+                    <n-input v-model:value="searchForm.sleeper" placeholder="请输入轨枕序号" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="参数名称">
+                    <n-input v-model:value="searchForm.paramName" placeholder="请输入参数名称" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="参数值">
+                    <n-input v-model:value="searchForm.paramValue" placeholder="请输入参数值" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi>
+                    <n-space>
+                        <n-button type="primary" @click="handleSearch">
+                            搜索
+                        </n-button>
+                        <n-button @click="resetSearch">
+                            重置
+                        </n-button>
+                    </n-space>
+                </n-form-item-gi>
+            </n-grid>
+        </n-form>
+
+        <n-data-table :columns="columns" :data="data"  :bordered="true" :single-line="false"
+            :max-height="600" :loading="loading" />
     </CommonPage>
 </template>
 
 <script setup>
-import { h, ref, computed } from 'vue'
-import { NButton, NTooltip } from 'naive-ui'
-
-
+import { h, ref, computed, onMounted, nextTick } from 'vue';
+import { NButton, NTooltip, NDataTable, NForm, NFormItemGi, NInput, NGrid, NSpace } from 'naive-ui';
+import api from './api.js';
 
 // 道岔型号列表
 const turnoutModels = ['SC330', 'SC400', 'SC500'];
@@ -43,64 +77,57 @@ const dropdownOptions = turnoutModels.map(model => ({
     key: model
 }));
 
-// 切换道岔型号（用于标题点击）：循环切换到下一个型号
-const switchTurnoutModel = () => {
-    currentModelIndex.value = (currentModelIndex.value + 1) % turnoutModels.length;
-    fetchDataForModel(currentModel.value);
-};
-
-// 处理下拉菜单选择：根据选中的型号更新索引并获取数据
-const handleDropdownSelect = (key) => {
-    currentModelIndex.value = turnoutModels.indexOf(key);
-    fetchDataForModel(key);
-};
-
-// 获取数据的占位函数（需实现具体逻辑）
-const fetchDataForModel = (model) => {
-    console.log(`Fetching data for turnout model: ${model}`);
-    // 在此处实现根据道岔型号获取数据的逻辑，例如调用API
-};
+// 控制搜索表单显示状态
+const showSearchForm = ref(false);
 
 // 切换搜索表单显示状态
 function toggleSearchForm() {
-    showSearchForm.value = !showSearchForm.value
+    showSearchForm.value = !showSearchForm.value;
 }
 
+// 切换道岔型号（用于标题点击）：循环切换到下一个型号
+const switchTurnoutModel = async () => {
+    currentModelIndex.value = (currentModelIndex.value + 1) % turnoutModels.length;
+    searchForm.value.pageNo = 1;
+    await fetchData();
+};
+
+// 处理下拉菜单选择：根据选中的型号更新索引并获取数据
+const handleDropdownSelect = async (key) => {
+    currentModelIndex.value = turnoutModels.indexOf(key);
+    searchForm.value.pageNo = 1;
+    await fetchData();
+};
 
 // 定义表格列
 const columns = [
     {
-        title: '量测点数',
+        title: '道尺号',
         key: 'point',
         align: 'center',
         width: 100,
-        // For visual grouping, you might need custom cell rendering or data preprocessing
-        // Naive UI does not natively support rowspan based on data values in standard columns
     },
     {
         title: '位置',
         key: 'position',
         align: 'center',
         width: 150,
-        // For visual grouping, similar to '量测点数'
     },
     {
         title: '轨向',
         key: 'direction',
         align: 'center',
         width: 80,
-        // For visual grouping
     },
     {
         title: '轨枕序号',
         key: 'sleeper',
         align: 'center',
         width: 100,
-        // For visual grouping
     },
     {
         title: '测量参数',
-        key: 'measurement', // Parent key, not directly used for data
+        key: 'measurement',
         align: 'center',
         children: [
             {
@@ -119,81 +146,98 @@ const columns = [
     },
 ];
 
-const data = ref([
-    { key: 1, point: 'S1', position: '尖轨轨顺坡终点', direction: 'A股', sleeper: '第1号枕', paramName: '轨距', paramValue: '**' },
-    { key: 2, point: 'S1', position: '尖轨轨顺坡终点', direction: 'A股', sleeper: '第1号枕', paramName: '水平', paramValue: '**' },
-    { key: 3, point: 'S2', position: '尖轨尖端', direction: '', sleeper: '第6号枕', paramName: '轨距', paramValue: '**' },
-    { key: 4, point: 'S2', position: '尖轨尖端', direction: '', sleeper: '第6号枕', paramName: '水平', paramValue: '**' },
-    { key: 5, point: 'S2', position: '尖轨尖端', direction: '', sleeper: '第6号枕', paramName: '密贴', paramValue: '**' },
-    { key: 6, point: 'S3', position: '尖轨中前', direction: 'B股', sleeper: '第11-12号枕', paramName: '轨距', paramValue: '**' },
-    { key: 7, point: 'S3', position: '尖轨中前', direction: 'B股', sleeper: '第11-12号枕', paramName: '水平', paramValue: '**' },
-    { key: 8, point: 'S4', position: '尖轨中', direction: 'B股', sleeper: '第15号枕', paramName: '轨距', paramValue: '**' },
-    { key: 9, point: 'S4', position: '尖轨中', direction: 'B股', sleeper: '第15号枕', paramName: '水平', paramValue: '**' },
-    { key: 10, point: 'S5', position: '尖轨中后', direction: 'B股', sleeper: '第21号枕', paramName: '轨距', paramValue: '**' },
-    { key: 11, point: 'S5', position: '尖轨中后', direction: 'B股', sleeper: '第21号枕', paramName: '水平', paramValue: '**' },
-    { key: 12, point: 'S6', position: '尖轨跟端直线股', direction: 'A股', sleeper: '第26号枕', paramName: '轨距', paramValue: '**' },
-    { key: 13, point: 'S6', position: '尖轨跟端直线股', direction: 'A股', sleeper: '第26号枕', paramName: '水平', paramValue: '**' },
-    { key: 14, point: 'S7', position: '尖轨跟端曲线股', direction: 'B股', sleeper: '第26号枕', paramName: '轨距', paramValue: '**' },
-    { key: 15, point: 'S7', position: '尖轨跟端曲线股', direction: 'B股', sleeper: '第26号枕', paramName: '水平', paramValue: '**' },
-    { key: 16, point: 'S8', position: '导曲部分直线股前部', direction: 'A股', sleeper: '第32号枕', paramName: '轨距', paramValue: '**' },
-    { key: 17, point: 'S8', position: '导曲部分直线股前部', direction: 'A股', sleeper: '第32号枕', paramName: '水平', paramValue: '**' },
-    { key: 18, point: 'S9', position: '导曲部分曲线股前部', direction: 'B股', sleeper: '第32号枕', paramName: '轨距', paramValue: '**' },
-    { key: 19, point: 'S9', position: '导曲部分曲线股前部', direction: 'B股', sleeper: '第32号枕', paramName: '水平', paramValue: '**' },
-    { key: 20, point: 'S10', position: '内配轨接头直线股', direction: 'A股', sleeper: '第38号枕', paramName: '轨距', paramValue: '**' },
-    { key: 21, point: 'S10', position: '内配轨接头直线股', direction: 'A股', sleeper: '第38号枕', paramName: '水平', paramValue: '**' },
-    { key: 22, point: 'S11', position: '内配轨接头曲线股', direction: 'B股', sleeper: '第38号枕', paramName: '轨距', paramValue: '**' },
-    { key: 23, point: 'S11', position: '内配轨接头曲线股', direction: 'B股', sleeper: '第38号枕', paramName: '水平', paramValue: '**' },
-    { key: 24, point: 'S12', position: '导曲部分直线股后部', direction: 'A股', sleeper: '第46号枕', paramName: '轨距', paramValue: '**' },
-    { key: 25, point: 'S12', position: '导曲部分直线股后部', direction: 'A股', sleeper: '第46号枕', paramName: '水平', paramValue: '**' },
-    { key: 26, point: 'S13', position: '导曲部分曲线股后部', direction: 'B股', sleeper: '第46号枕', paramName: '轨距', paramValue: '**' },
-    { key: 27, point: 'S13', position: '导曲部分曲线股后部', direction: 'B股', sleeper: '第46号枕', paramName: '水平', paramValue: '**' },
-    { key: 28, point: 'S14', position: '直线股辙叉前', direction: 'A股', sleeper: '第54号枕', paramName: '轨距', paramValue: '**' },
-    { key: 29, point: 'S14', position: '直线股辙叉前', direction: 'A股', sleeper: '第54号枕', paramName: '水平', paramValue: '**' },
-    { key: 30, point: 'S15', position: '直线股辙叉中', direction: 'A股', sleeper: '第57-58号枕', paramName: '轨距', paramValue: '**' },
-    { key: 31, point: 'S15', position: '直线股辙叉中', direction: 'A股', sleeper: '第57-58号枕', paramName: '水平', paramValue: '**' },
-    { key: 32, point: 'S15', position: '直线股辙叉中', direction: 'A股', sleeper: '第57-58号枕', paramName: '查照距离', paramValue: '**' },
-    { key: 33, point: 'S15', position: '直线股辙叉中', direction: 'A股', sleeper: '第57-58号枕', paramName: '护背距离', paramValue: '**' },
-    { key: 34, point: 'S16', position: '直线股辙叉后', direction: 'A股', sleeper: '第63号枕', paramName: '轨距', paramValue: '**' },
-    { key: 35, point: 'S16', position: '直线股辙叉后', direction: 'A股', sleeper: '第63号枕', paramName: '水平', paramValue: '**' },
-    { key: 36, point: 'S17', position: '曲线股辙叉前', direction: 'B股', sleeper: '第63号枕', paramName: '轨距', paramValue: '**' },
-    { key: 37, point: 'S17', position: '曲线股辙叉前', direction: 'B股', sleeper: '第63号枕', paramName: '水平', paramValue: '**' },
-    { key: 38, point: 'S18', position: '曲线股辙叉中', direction: 'B股', sleeper: '第57-58号枕', paramName: '轨距', paramValue: '**' },
-    { key: 39, point: 'S18', position: '曲线股辙叉中', direction: 'B股', sleeper: '第57-58号枕', paramName: '水平', paramValue: '**' },
-    { key: 40, point: 'S18', position: '曲线股辙叉中', direction: 'B股', sleeper: '第57-58号枕', paramName: '查照距离', paramValue: '**' },
-    { key: 41, point: 'S18', position: '曲线股辙叉中', direction: 'B股', sleeper: '第57-58号枕', paramName: '护背距离', paramValue: '**' },
-    { key: 42, point: 'S19', position: '曲线股辙叉后', direction: 'B股', sleeper: '第54号枕', paramName: '轨距', paramValue: '**' },
-    { key: 43, point: 'S19', position: '曲线股辙叉后', direction: 'B股', sleeper: '第54号枕', paramName: '水平', paramValue: '**' },
-]);
+// 表格数据和加载状态
+const data = ref([]);
+const loading = ref(false);
 
-
+// 分页配置
+const pagination = ref({
+    pageNo: 1,
+    pageSize: 43,
+    total: 0,
+    onChange: (pageNo) => {
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        searchForm.value.pageSize = pageSize;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+});
 
 // 搜索表单数据
 const searchForm = ref({
-    lineNo: '',
-    lineName: '',
-    startMileage: '',
-    endMileage: '',
+    point: '',
+    position: '',
     direction: '',
-    curveDirection: '',
-    gaugeType: '',
-})
+    sleeper: '',
+    paramName: '',
+    paramValue: '',
+    pageNo: 1,
+    pageSize: 43,
+});
 
-
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
-}
-
-function resetSearch() {
-    searchForm.value = {
-        lineNo: '',
-        lineName: '',
-        startMileage: '',
-        endMileage: '',
-        idom: '',
-        curveDirection: '',
-        gaugeType: '',
+// 获取数据
+async function fetchData() {
+    loading.value = true;
+    try {
+        const params = {
+            lineNo: searchForm.value.lineNo || null,
+            lineName: searchForm.value.lineName || null,
+            startMileage: searchForm.value.startMileage || null,
+            endMileage: searchForm.value.endMileage || null,
+            direction: searchForm.value.direction || null,
+            curveDirection: searchForm.value.curveDirection || null,
+            gaugeType: searchForm.value.gaugeType || null,
+            turnoutModel: currentModel.value, // Pass the selected turnout model
+            pageNo: searchForm.value.pageNo,
+            pageSize: searchForm.value.pageSize,
+        };
+        const response = await api.getSgData(params);
+        data.value = (response.data.pageData || []).map(item => ({
+            key: item.key,
+            point: item.point,
+            position: item.position,
+            direction: item.direction,
+            sleeper: item.sleeper,
+            paramName: item.paramName,
+            paramValue: item.paramValue,
+        }));
+        pagination.value.total = response.data.total || 0;
+        await nextTick(); // 确保 DOM 更新
+        pagination.value = { ...pagination.value }; // 强制触发响应式更新
+    } catch (error) {
+        console.error('获取数据失败:', error);
+        data.value = [];
+        pagination.value.total = 0;
+    } finally {
+        loading.value = false;
     }
 }
+
+// 搜索和重置
+async function handleSearch() {
+    searchForm.value.pageNo = 1;
+    await fetchData();
+}
+
+async function resetSearch() {
+    searchForm.value = {
+        point: '',
+        position: '',
+        direction: '',
+        sleeper: '',
+        paramName: '',
+        paramValue: '',
+        pageNo: 1,
+        pageSize: 43,
+    };
+    await fetchData();
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData();
+});
 </script>

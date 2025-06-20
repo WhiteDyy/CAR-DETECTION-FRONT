@@ -1,60 +1,95 @@
+import { useAuthStore } from '@/store';
+import { EventSourcePolyfill } from 'event-source-polyfill';
+
 export default class SSEService {
-  constructor(url) {
-    this.url = url
-    this.eventSource = null
-    this.listeners = []
-    this.reconnectDelay = 1000 // 初始重连延迟，单位：毫秒
-    this.maxReconnectDelay = 10000 // 最大重连延迟，单位：毫秒
+  constructor(url = 'http://localhost:8089/api/sensor') { // 确保 URL 正确
+    this.url = url;
+    this.eventSource = null;
+    this.listeners = new Map(); // 支持多种事件类型
+    this.reconnectDelay = 1000;
+    this.maxReconnectDelay = 10000;
+    this.maxRetries = 5;
+    this.retryCount = 0;
   }
 
-  // 添加事件监听器
-  addEventListener(callback) {
-    this.listeners.push(callback)
+  addEventListener(eventType, callback) {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, new Set());
+    }
+    this.listeners.get(eventType).add(callback);
   }
 
-  // 移除事件监听器
-  removeEventListener(callback) {
-    this.listeners = this.listeners.filter((listener) => listener !== callback)
+  removeEventListener(eventType, callback) {
+    if (this.listeners.has(eventType)) {
+      this.listeners.get(eventType).delete(callback);
+    }
   }
 
-  // 启动 SSE 连接
   start() {
-    if (this.eventSource) return // 如果已有连接，则不再重新连接
-    
-    this.createEventSource()
+    if (this.eventSource) return;
+    this.createEventSource();
   }
 
-  // 创建 EventSource 并处理消息和错误
   createEventSource() {
-    this.eventSource = new EventSource(this.url)
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
+    this.eventSource = new EventSourcePolyfill(this.url, {
+      headers: {
+        Authorization: 'Bearer ' + (token || ''),
+        Accept: 'text/event-stream',
+      },
+      heartbeatTimeout: 60000,
+    });
+
+    this.eventSource.addEventListener('sensorData', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.listeners.get('sensorData')?.forEach((callback) => callback(data));
+      } catch (error) {
+        console.error('Failed to parse sensorData:', error);
+      }
+    });
+
+    this.eventSource.addEventListener('heartbeat', () => {
+      this.retryCount = 0;
+    });
 
     this.eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      this.listeners.forEach((callback) => callback(data)) // 将收到的数据传递给所有监听器
-    }
+      try {
+        const data = JSON.parse(event.data);
+        this.listeners.get('sensorData')?.forEach((callback) => callback(data));
+      } catch (error) {
+        console.error('Failed to parse default message:', error);
+      }
+    };
 
     this.eventSource.onerror = (error) => {
-      console.error('SSE Error:', error)
-      this.stop() // 关闭当前的 SSE 连接
-      this.retryConnection() // 尝试重连
-    }
+      this.stop();
+      if (this.retryCount < this.maxRetries) {
+        this.retryConnection();
+      } else {
+        console.error('达到最大重试次数，停止重连');
+      }
+    };
   }
 
-  // 尝试重连
   retryConnection() {
     setTimeout(() => {
-      console.log(`尝试重连 SSE... 当前延迟: ${this.reconnectDelay}ms`)
-      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay) // 延迟指数退避
-      this.start() // 重新启动连接
-    }, this.reconnectDelay)
+      console.log(`尝试重连 SSE... 当前延迟: ${this.reconnectDelay}ms`);
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
+      this.retryCount++;
+      this.start();
+      this.listeners.get('reconnect')?.forEach((callback) => callback());
+    }, this.reconnectDelay);
   }
 
-  // 关闭 SSE 连接
   stop() {
     if (this.eventSource) {
-      this.eventSource.close()
-      this.eventSource = null
+      console.log('Stopping SSE connection');
+      this.eventSource.close();
+      this.eventSource = null;
     }
-    this.reconnectDelay = 1000 // 重置重连延迟
+    this.reconnectDelay = 1000;
+    this.retryCount = 0;
   }
 }

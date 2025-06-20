@@ -1,77 +1,41 @@
 <template>
     <CommonPage>
+        <!-- 表格标题与提示 -->
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
                     <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
                         @click="toggleSearchForm">
-                        轨道{{ selectedType }}超限报表
+                        轨道超限报表
                     </div>
                 </template>
                 点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
             </n-tooltip>
-            <n-dropdown trigger="click" :options="dropdownOptions" @select="handleDropdownSelect">
-                <n-button style="margin-left: 16px;" type="primary">
-                    切换表格
-                </n-button>
-            </n-dropdown>
         </div>
-
-        <!-- 第一个表单：基本信息（5列布局，单独绑定） -->
-        <n-form v-if="showSearchForm" :model="basicInfoForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-card title="基本信息筛选">
-                <n-grid :cols="5" :x-gap="12" :y-gap="8">
-                    <n-form-item-gi label="起始里程">
-                        <n-input v-model:value="basicInfoForm.startMileage" placeholder="请输入起始里程" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="终止里程">
-                        <n-input v-model:value="basicInfoForm.endMileage" placeholder="请输入终止里程" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="线路名称">
-                        <n-input v-model:value="basicInfoForm.lineName" placeholder="请输入线路名称" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="上下行">
-                        <n-select v-model:value="basicInfoForm.direction" :options="directionOptions" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="检测人员">
-                        <n-input v-model:value="basicInfoForm.inspector" placeholder="请输入检测人员" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="检测时间">
-                        <n-date-picker v-model:value="basicInfoForm.inspectionTimeRange" type="daterange" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="超限处理情况">
-                        <n-input v-model:value="basicInfoForm.excessHandling" placeholder="请输入超限处理情况" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi>
-                        <n-space>
-                            <n-button type="primary" @click="handleSearch">
-                                搜索
-                            </n-button>
-                            <n-button @click="resetBasicInfoForm">
-                                重置
-                            </n-button>
-                        </n-space>
-                    </n-form-item-gi>
-                </n-grid>
-            </n-card>
-        </n-form>
-
-        <!-- 第二个表单：超限标准矩阵（固定值，单独绑定，修改布局） -->
-        <n-form v-if="showSearchForm" :model="excessStandardsForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-card title="超限标准筛选">
-                <n-data-table :columns="standTablecolumns" :data="standTabledata" :single-line="false" />
-                <n-button style="margin-top: 12px;" @click="resetExcessStandardsForm">重置超限标准</n-button>
-            </n-card>
-        </n-form>
-
-
+        <!-- 搜索表单 -->
         <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
             :style="{ marginBottom: '16px' }">
             <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi v-for="field in filterFields" :key="field.key" :label="field.label">
-                    <n-input v-model:value="searchForm[field.key]" :placeholder="`请输入${field.label}`" clearable />
+                <n-form-item-gi label="标识位置">
+                    <n-input v-model:value="searchForm.mileage" placeholder="请输入标识位置" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="线路特征">
+                    <n-input v-model:value="searchForm.operators" placeholder="请输入线路特征" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="检测时间">
+                    <n-input v-model:value="searchForm.inspectionTime" placeholder="请输入检测时间" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="负责人员">
+                    <n-input v-model:value="searchForm.responsiblePerson" placeholder="请输入负责人员" clearable />
+                </n-form-item-gi>
+                <n-form-item-gi label="轨距超限峰值">
+                    <n-input v-model:value="searchForm.gaugeMeasured" placeholder="请输入轨距超限峰值" clearable />
+                </n-form-item-gi>
+                <!-- <n-form-item-gi label="轨距变化率">
+                    <n-input v-model:value="searchForm.gaugeChangeRateMeasured" placeholder="请输入轨距变化率" clearable />
+                </n-form-item-gi> -->
+                <n-form-item-gi label="水平超限峰值">
+                    <n-input v-model:value="searchForm.levelMeasured" placeholder="请输入水平超限峰值" clearable />
                 </n-form-item-gi>
                 <n-form-item-gi>
                     <n-space>
@@ -86,80 +50,24 @@
             </n-grid>
         </n-form>
 
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" :virtual-scroll="true" :scroll-x="3000" :max-height="600" />
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
 <script setup>
-import { h, ref, computed } from 'vue'
-import { NButton, NTooltip, NForm, NFormItemGi, NInput, NGrid, NSpace, NDataTable } from 'naive-ui'
-
-
-
-const standTablecolumns = [
-    {
-        title: '',
-        key: 'standard',
-        rowSpan: (row, i) => (4),
-        render: () => '超限标准'
-    },
-    {
-        title: '',
-        key: 'type',
-        colSpan: (row, i) => (i === 0 ? 0 : 1),
-        render(row, i) {
-            const types = ['作业验收', '综合保养', '临时补修', '四级超限']
-            return types[i]
-        }
-    },
-    { title: '轨距', key: 'gauge' },
-    { title: '轨距变化率', key: 'gaugeChangeRate' },
-    { title: '水平', key: 'level' },
-    { title: '三角坑', key: 'triangularPit' },
-    { title: '高低', key: 'height' },
-    { title: '轨向', key: 'trackDirection' },
-    { title: '正矢', key: 'arrow' },
-
-]
-
-const standTabledata = [
-
-    { key: 0, type: '作业验收', gauge: '-2~+2', gaugeChangeRate: '±2', level: '±2', triangularPit: '±2', height: '±1', trackDirection: '±1', arrow: '±1', },
-    { key: 1, type: '综合保养', gauge: '-4~+4', gaugeChangeRate: '±4', level: '±4', triangularPit: '±4', height: '±2', trackDirection: '±2', arrow: '±2', },
-    { key: 2, type: '临时补修', gauge: '-6.5~+7.5', gaugeChangeRate: '±6', level: '±7', triangularPit: '±7', height: '±4', trackDirection: '±4', arrow: '±4', },
-    { key: 3, type: '四级超限', gauge: '-6~+8', gaugeChangeRate: '±6', level: '±6', triangularPit: '±6', height: '±8', trackDirection: '±8', arrow: '±8', }
-]
-// 上下行选项
-const directionOptions = [
-    { label: '上行', value: 'up' },
-    { label: '下行', value: 'down' },
-]
-
-// Dropdown options for table selection
-const dropdownOptions = [
-    { label: '作业验收', key: '作业验收' },
-    { label: '综合保养', key: '综合保养' },
-    { label: '临时补修', key: '临时补修' },
-    { label: '四级超限', key: '四级超限' }
-]
-
-// State for selected table type
-const selectedType = ref('作业验收')
-
-// Handle dropdown selection
-const handleDropdownSelect = (key) => {
-    selectedType.value = key
-}
-
-
+import { h, onMounted, ref } from 'vue';
+import { NButton, NTooltip, NForm, NFormItemGi, NInput, NGrid, NSpace, NDataTable } from 'naive-ui';
+import api from './api'; // 使用默认导入，与 api.js 的默认导出一致
 
 // 控制搜索表单显示状态
-const showSearchForm = ref(false)
+const showSearchForm = ref(false);
 
 // 切换搜索表单显示状态
 function toggleSearchForm() {
-    showSearchForm.value = !showSearchForm.value
+    showSearchForm.value = !showSearchForm.value;
 }
 
 // 定义表格列
@@ -168,8 +76,20 @@ const columns = [
         title: '标识位置',
         align: 'center',
         children: [
-            { title: '公里', key: 'mileage', align: 'center', width: 100, render: (row) => Math.floor(Number(row.mileage)) },
-            { title: '米', key: 'mileage', align: 'center', width: 100, render: (row) => ((Number(row.mileage) % 1) * 1000).toFixed(0) },
+            {
+                title: '公里',
+                key: 'mileage',
+                align: 'center',
+                width: 100,
+                render: (row) => Math.floor(Number(row.mileage))
+            },
+            {
+                title: '米',
+                key: 'mileage',
+                align: 'center',
+                width: 100,
+                render: (row) => ((Number(row.mileage) % 1) * 1000).toFixed(0)
+            },
         ],
     },
     {
@@ -180,14 +100,14 @@ const columns = [
             { title: '延长里程m', key: 'gaugeWarning', align: 'center', width: 120 },
         ],
     },
-    {
-        title: '轨距变化率',
-        align: 'center',
-        children: [
-            { title: '超限峰值mm', key: 'gaugeChangeRateMeasured', align: 'center', width: 120 },
-            { title: '延长里程m', key: 'gaugeChangeRateWarning', align: 'center', width: 120 },
-        ],
-    },
+    // {
+    //     title: '轨距变化率',
+    //     align: 'center',
+    //     children: [
+    //         { title: '超限峰值mm', key: 'gaugeChangeRateMeasured', align: 'center', width: 120 },
+    //         { title: '延长里程m', key: 'gaugeChangeRateWarning', align: 'center', width: 120 },
+    //     ],
+    // },
     {
         title: '水平',
         align: 'center',
@@ -205,30 +125,6 @@ const columns = [
         ],
     },
     {
-        title: '右高低',
-        align: 'center',
-        children: [
-            { title: '超限峰值mm', key: 'alignmentRightMeasured', align: 'center', width: 120 },
-            { title: '延长里程m', key: 'alignmentRightWarning', align: 'center', width: 120 },
-        ],
-    },
-    {
-        title: '右轨向',
-        align: 'center',
-        children: [
-            { title: '超限峰值mm', key: 'directionRightMeasured', align: 'center', width: 120 },
-            { title: '延长里程m', key: 'directionRightWarning', align: 'center', width: 120 },
-        ],
-    },
-    {
-        title: '右正矢',
-        align: 'center',
-        children: [
-            { title: '超限峰值mm', key: 'versineRightMeasured', align: 'center', width: 120 },
-            { title: '延长里程m', key: 'versineRightWarning', align: 'center', width: 120 },
-        ],
-    },
-    {
         title: '左高低',
         align: 'center',
         children: [
@@ -237,26 +133,60 @@ const columns = [
         ],
     },
     {
-        title: '左轨向',
+        title: '右高低',
+        align: 'center',
+        children: [
+            { title: '超限峰值mm', key: 'alignmentRightMeasured', align: 'center', width: 120 },
+            { title: '延长里程m', key: 'alignmentRightWarning', align: 'center', width: 120 },
+        ],
+    },
+    {
+        title: '左轨向（正矢）',
         align: 'center',
         children: [
             { title: '超限峰值mm', key: 'directionLeftMeasured', align: 'center', width: 120 },
             { title: '延长里程m', key: 'directionLeftWarning', align: 'center', width: 120 },
         ],
     },
+    // {
+    //     title: '左正矢',
+    //     align: 'center',
+    //     children: [
+    //         { title: '超限峰值mm', key: 'versineLeftMeasured', align: 'center', width: 120 },
+    //         { title: '延长里程m', key: 'versineLeftWarning', align: 'center', width: 120 },
+    //     ],
+    // },
     {
-        title: '左正矢',
+        title: '右轨向（正矢）',
         align: 'center',
         children: [
-            { title: '超限峰值mm', key: 'versineLeftMeasured', align: 'center', width: 120 },
-            { title: '延长里程m', key: 'versineLeftWarning', align: 'center', width: 120 },
+            { title: '超限峰值mm', key: 'directionRightMeasured', align: 'center', width: 120 },
+            { title: '延长里程m', key: 'directionRightWarning', align: 'center', width: 120 },
         ],
     },
+    // {
+    //     title: '右正矢',
+    //     align: 'center',
+    //     children: [
+    //         { title: '超限峰值mm', key: 'versineRightMeasured', align: 'center', width: 120 },
+    //         { title: '延长里程m', key: 'versineRightWarning', align: 'center', width: 120 },
+    //     ],
+    // },
     {
         title: '线路特征',
         key: 'operators',
         width: 150,
         align: 'center',
+        render: row =>
+            h(
+                NTooltip,
+                { trigger: 'hover' },
+                {
+                    default: () => row.operators,
+                    trigger: () =>
+                        h('span', { style: { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, row.operators),
+                },
+            ),
     },
     {
         title: '完成时间',
@@ -272,270 +202,175 @@ const columns = [
     },
 ];
 
-// 展平 columns 以获取所有筛选字段
-const filterFields = computed(() => {
-    const fields = [];
-    columns.forEach((col) => {
-        if (col.children) {
-            col.children.forEach((child) => {
-                if (child.key && child.key !== 'mileage') { // 避免 mileage 重复
-                    fields.push({
-                        key: child.key,
-                        label: `${col.title} - ${child.title}`,
-                    });
-                }
-            });
-        } else if (col.key) {
-            fields.push({
-                key: col.key,
-                label: col.title,
-            });
-        }
-    });
-    // 添加 mileage 作为单独字段
-    fields.unshift({
-        key: 'mileage',
-        label: '标识位置（公里）',
-    });
-    return fields;
-});
-
-// 生成假数据
-// const tableData = Array.from({ length: 15 }, (_, index) => ({
-//     mileage: (index * 0.5).toFixed(3),
-//     gaugeMeasured: (1435 + Math.random() * 2).toFixed(2),
-//     gaugeWarning: '±2',
-//     gaugeChangeRateMeasured: (Math.random() * 2).toFixed(2),
-//     gaugeChangeRateWarning: '±1',
-//     levelMeasured: (Math.random() * 3).toFixed(2),
-//     levelWarning: '±2',
-//     twistMeasured: (Math.random() * 4).toFixed(2),
-//     twistWarning: '±3',
-//     alignmentLeftMeasured: (Math.random() * 3).toFixed(2),
-//     alignmentLeftWarning: '±2',
-//     alignmentRightMeasured: (Math.random() * 3).toFixed(2),
-//     alignmentRightWarning: '±2',
-//     directionLeftMeasured: (Math.random() * 2).toFixed(2),
-//     directionLeftWarning: '±1',
-//     directionRightMeasured: (Math.random() * 2).toFixed(2),
-//     directionRightWarning: '±1',
-//     versineLeftMeasured: (Math.random() * 2).toFixed(2),
-//     versineLeftWarning: '±1',
-//     versineRightMeasured: (Math.random() * 2).toFixed(2),
-//     versineRightWarning: '±1',
-//     superelevationMeasured: (Math.random() * 150).toFixed(2),
-//     superelevationWarning: '±10',
-//     startTangentLengthMeasured: (50 + index * 2).toFixed(2),
-//     startTangentLengthWarning: '±5',
-//     startTransitionLengthMeasured: (30 + index * 1.5).toFixed(2),
-//     startTransitionLengthWarning: '±3',
-//     endTransitionLengthMeasured: (30 + index * 1.5).toFixed(2),
-//     endTransitionLengthWarning: '±3',
-//     endTangentLengthMeasured: (50 + index * 2).toFixed(2),
-//     endTangentLengthWarning: '±5',
-//     curveRadiusMeasured: (500 + index * 10).toFixed(2),
-//     curveRadiusWarning: '±20',
-//     turningAngleMeasured: (10 + index * 0.5).toFixed(2),
-//     turningAngleWarning: '±1',
-//     totalCurveLengthMeasured: (200 + index * 5).toFixed(2),
-//     totalCurveLengthWarning: '±10',
-//     operators: `操作员 ${index + 1}`,
-//     responsiblePerson: `人员 ${index + 1}`,
-//     inspectionTime: new Date().toLocaleDateString(),
-// }));
-
-// 生成假数据（包含新字段）
-const tableData = Array.from({ length: 15 }, (_, index) => ({
-    mileage: (index * 0.5).toFixed(3),
-    gaugeMeasured: (1435 + Math.random() * 2).toFixed(2),
-    gaugeWarning: '±2',
-    gaugeChangeRateMeasured: (Math.random() * 2).toFixed(2),
-    gaugeChangeRateWarning: '±1',
-    levelMeasured: (Math.random() * 3).toFixed(2),
-    levelWarning: '±2',
-    twistMeasured: (Math.random() * 4).toFixed(2),
-    twistWarning: '±3',
-    alignmentLeftMeasured: (Math.random() * 3).toFixed(2),
-    alignmentLeftWarning: '±2',
-    alignmentRightMeasured: (Math.random() * 3).toFixed(2),
-    alignmentRightWarning: '±2',
-    directionLeftMeasured: (Math.random() * 2).toFixed(2),
-    directionLeftWarning: '±1',
-    directionRightMeasured: (Math.random() * 2).toFixed(2),
-    directionRightWarning: '±1',
-    versineLeftMeasured: (Math.random() * 2).toFixed(2),
-    versineLeftWarning: '±1',
-    versineRightMeasured: (Math.random() * 2).toFixed(2),
-    versineRightWarning: '±1',
-    superelevationMeasured: (Math.random() * 150).toFixed(2),
-    superelevationWarning: '±10',
-    startTangentLengthMeasured: (50 + index * 2).toFixed(2),
-    startTangentLengthWarning: '±5',
-    startTransitionLengthMeasured: (30 + index * 1.5).toFixed(2),
-    startTransitionLengthWarning: '±3',
-    endTransitionLengthMeasured: (30 + index * 1.5).toFixed(2),
-    endTransitionLengthWarning: '±3',
-    endTangentLengthMeasured: (50 + index * 2).toFixed(2),
-    endTangentLengthWarning: '±5',
-    curveRadiusMeasured: (500 + index * 10).toFixed(2),
-    curveRadiusWarning: '±20',
-    turningAngleMeasured: (10 + index * 0.5).toFixed(2),
-    turningAngleWarning: '±1',
-    totalCurveLengthMeasured: (200 + index * 5).toFixed(2),
-    totalCurveLengthWarning: '±10',
-    operators: `操作员 ${index + 1}`,
-    responsiblePerson: `人员 ${index + 1}`,
-    inspectionTime: new Date().toLocaleDateString(),
-    lineName: `线路 ${index % 3 + 1}`,
-    direction: index % 2 === 0 ? 'up' : 'down',
-    inspector: `检测员 ${index + 1}`,
-    excessHandling: `处理情况 ${index + 1}`,
-}));
-
-
-
-// 第一个表单：基本信息数据
-const basicInfoForm = ref({
-    startMileage: '',
-    endMileage: '',
-    lineName: '',
-    direction: null,
-    inspector: '',
-    inspectionTimeRange: null,
-    excessHandling: '',
-});
-
-// 第二个表单：超限标准数据（固定初始值）
-const excessStandardsForm = ref({
-    jobAcceptance: {
-        gauge: '2',
-        gaugeChangeRate: '1',
-        level: '2',
-        twist: '3',
-        alignment: '2',
-        direction: '1',
-        versine: '1',
-    },
-    comprehensiveMaintenance: {
-        gauge: '3',
-        gaugeChangeRate: '1.5',
-        level: '3',
-        twist: '4',
-        alignment: '3',
-        direction: '1.5',
-        versine: '1.5',
-    },
-    temporaryRepair: {
-        gauge: '4',
-        gaugeChangeRate: '2',
-        level: '4',
-        twist: '5',
-        alignment: '4',
-        direction: '2',
-        versine: '2',
-    },
-    levelFourExcess: {
-        gauge: '5',
-        gaugeChangeRate: '2.5',
-        level: '5',
-        twist: '6',
-        alignment: '5',
-        direction: '2.5',
-        versine: '2.5',
-    },
-});
+// 表格数据和加载状态
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页配置
-const pagination = {
+const pagination = ref(reactive({
+    pageNo: 1,
     pageSize: 10,
-}
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
 
 // 搜索表单数据
 const searchForm = ref({
     mileage: '',
     gaugeMeasured: '',
-    gaugeWarning: '',
     gaugeChangeRateMeasured: '',
-    gaugeChangeRateWarning: '',
     levelMeasured: '',
-    levelWarning: '',
     twistMeasured: '',
-    twistWarning: '',
-    alignmentLeftMeasured: '',
-    alignmentLeftWarning: '',
     alignmentRightMeasured: '',
-    alignmentRightWarning: '',
-    directionLeftMeasured: '',
-    directionLeftWarning: '',
+    alignmentLeftMeasured: '',
     directionRightMeasured: '',
+    directionLeftMeasured: '',
+    // versineRightMeasured: '',
+    // versineLeftMeasured: '',
+    gaugeWarning: '',
+    gaugeChangeRateWarning: '',
+    levelWarning: '',
+    twistWarning: '',
+    alignmentRightWarning: '',
+    alignmentLeftWarning: '',
     directionRightWarning: '',
-    versineLeftMeasured: '',
-    versineLeftWarning: '',
-    versineRightMeasured: '',
+    directionLeftWarning: '',
     versineRightWarning: '',
+    versineLeftWarning: '',
     operators: '',
     inspectionTime: '',
     responsiblePerson: '',
+    pageNo: 1,
+    pageSize: 10
 });
 
-// 过滤后的数据
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        return Object.keys(searchForm.value).every((key) => {
-            const filterValue = searchForm.value[key];
-            if (!filterValue) return true; // 空过滤条件通过
-
-            const itemValue = item[key];
-            if (!itemValue) return false; // 数据无值则不通过
-
-            // 数值字段（如 mileage, gaugeMeasured 等）使用范围过滤
-            if (['mileage', 'gaugeMeasured', 'gaugeChangeRateMeasured', 'levelMeasured', 'twistMeasured',
-                'alignmentLeftMeasured', 'alignmentRightMeasured', 'directionLeftMeasured',
-                'directionRightMeasured', 'versineLeftMeasured', 'versineRightMeasured'].includes(key)) {
-                const numFilter = Number(filterValue);
-                const numItem = Number(itemValue);
-                return !isNaN(numFilter) && !isNaN(numItem) && numItem >= numFilter;
-            }
-
-            // 字符串字段（如 operators, inspectionTime, responsiblePerson）使用模糊匹配
-            return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
-        });
-    });
-});
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
+// 获取数据
+async function fetchData() {
+    loading.value = true;
+    try {
+        const params = {
+            mileage: searchForm.value.mileage,
+            gaugeMeasured: searchForm.value.gaugeMeasured,
+            gaugeChangeRateMeasured: searchForm.value.gaugeChangeRateMeasured,
+            levelMeasured: searchForm.value.levelMeasured,
+            twistMeasured: searchForm.value.twistMeasured,
+            alignmentRightMeasured: searchForm.value.alignmentRightMeasured,
+            alignmentLeftMeasured: searchForm.value.alignmentLeftMeasured,
+            directionRightMeasured: searchForm.value.directionRightMeasured,
+            directionLeftMeasured: searchForm.value.directionLeftMeasured,
+            // versineRightMeasured: searchForm.value.versineRightMeasured,
+            // versineLeftMeasured: searchForm.value.versineLeftMeasured,
+            gaugeWarning: searchForm.value.gaugeWarning,
+            gaugeChangeRateWarning: searchForm.value.gaugeChangeRateWarning,
+            levelWarning: searchForm.value.levelWarning,
+            twistWarning: searchForm.value.twistWarning,
+            alignmentRightWarning: searchForm.value.alignmentRightWarning,
+            alignmentLeftWarning: searchForm.value.alignmentLeftWarning,
+            directionRightWarning: searchForm.value.directionRightWarning,
+            directionLeftWarning: searchForm.value.directionLeftWarning,
+            versineRightWarning: searchForm.value.versineRightWarning,
+            versineLeftWarning: searchForm.value.versineLeftWarning,
+            operators: searchForm.value.operators,
+            inspectionTime: searchForm.value.inspectionTime,
+            responsiblePerson: searchForm.value.responsiblePerson,
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
+        };
+        const response = await api.getTransfinite(params); // 使用 api.getTransfinite
+        console.log('API 响应:', response); // 调试 API 响应
+        tableData.value = (response.data.pageData || []).map(item => ({
+            id: item.id,
+            mileage: item.mileage,
+            gaugeMeasured: item.gaugeMeasured,
+            gaugeWarning: item.gaugeWarning,
+            gaugeChangeRateMeasured: item.gaugeChangeRateMeasured,
+            gaugeChangeRateWarning: item.gaugeChangeRateWarning,
+            levelMeasured: item.levelMeasured,
+            levelWarning: item.levelWarning,
+            twistMeasured: item.twistMeasured,
+            twistWarning: item.twistWarning,
+            alignmentRightMeasured: item.alignmentRightMeasured,
+            alignmentRightWarning: item.alignmentRightWarning,
+            directionRightMeasured: item.directionRightMeasured,
+            directionRightWarning: item.directionRightWarning,
+            // versineRightMeasured: item.versineRightMeasured,
+            versineRightWarning: item.versineRightWarning,
+            alignmentLeftMeasured: item.alignmentLeftMeasured,
+            alignmentLeftWarning: item.alignmentLeftWarning,
+            directionLeftMeasured: item.directionLeftMeasured,
+            directionLeftWarning: item.directionLeftWarning,
+            versineLeftMeasured: item.versineLeftMeasured,
+            versineLeftWarning: item.versineLeftWarning,
+            operators: item.operators,
+            inspectionTime: item.inspectionTime,
+            responsiblePerson: item.responsiblePerson,
+        }));
+        pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick();
+    } catch (error) {
+       console.error('获取数据失败:', error);
+        tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+    } finally {
+        loading.value = false;
+    }
 }
 
-function resetSearch() {
+async function handleSearch() {
+    searchForm.value.pageNo = 1;
+    await fetchData();
+}
+
+async function resetSearch() {
     searchForm.value = {
         mileage: '',
         gaugeMeasured: '',
-        gaugeWarning: '',
         gaugeChangeRateMeasured: '',
-        gaugeChangeRateWarning: '',
         levelMeasured: '',
-        levelWarning: '',
         twistMeasured: '',
-        twistWarning: '',
-        alignmentLeftMeasured: '',
-        alignmentLeftWarning: '',
         alignmentRightMeasured: '',
-        alignmentRightWarning: '',
-        directionLeftMeasured: '',
-        directionLeftWarning: '',
+        alignmentLeftMeasured: '',
         directionRightMeasured: '',
-        directionRightWarning: '',
+        directionLeftMeasured: '',
+        // versineRightMeasured: '',
         versineLeftMeasured: '',
-        versineLeftWarning: '',
-        versineRightMeasured: '',
+        gaugeWarning: '',
+        gaugeChangeRateWarning: '',
+        levelWarning: '',
+        twistWarning: '',
+        alignmentRightWarning: '',
+        alignmentLeftWarning: '',
+        directionRightWarning: '',
+        directionLeftWarning: '',
         versineRightWarning: '',
+        versineLeftWarning: '',
         operators: '',
         inspectionTime: '',
         responsiblePerson: '',
+         pageNo: 1,
+        pageSize: 10
     };
+    await fetchData();
 }
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData();
+});
 </script>
 
 <style scoped>

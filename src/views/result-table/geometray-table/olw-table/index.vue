@@ -18,8 +18,6 @@
             </n-dropdown>
         </div>
 
-        <!-- Description List -->
-
         <!-- 搜索表单 -->
         <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
             :style="{ marginBottom: '16px' }">
@@ -49,34 +47,33 @@
             </n-grid>
         </n-form>
 
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" />
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
 <script setup>
-import { h, ref, computed } from 'vue';
+import { h, ref, computed, onMounted, nextTick } from 'vue';
 import { NButton, NTooltip, NDataTable, NForm, NFormItemGi, NInput, NGrid, NSpace } from 'naive-ui';
-
+import api from './api.js';
 
 const dropdownOptions = [
-    { label: '10米长波报表', key: '10米长波报表' },
-    { label: '20米长波报表', key: '20米长波报表' },
-    { label: '30米长波报表', key: '30米长波报表' },
-    { label: '40米长波报表', key: '40米长波报表' },
-    { label: '50米长波报表', key: '50米长波报表' },
-    { label: '60米长波报表', key: '60米长波报表' },
-    { label: '70米长波报表', key: '70米长波报表' },
-]
+    { label: '10米短波报表', key: '10米短波报表' },
+    { label: '20米短波报表', key: '20米短波报表' },
+    { label: '40米中波报表', key: '40米中波报表' },
+];
 
 // State for selected table type
-const selectedType = ref('10米长波报表')
+const selectedType = ref('10米短波报表');
 
 // Handle dropdown selection
-const handleDropdownSelect = (key) => {
-    selectedType.value = key
-}
-
+const handleDropdownSelect = async (key) => {
+    selectedType.value = key;
+    searchForm.value.pageNo = 1;
+    await fetchData();
+};
 
 // 控制搜索表单显示状态
 const showSearchForm = ref(false);
@@ -116,7 +113,7 @@ const columns = [
     },
     {
         title: () => h('div', [
-            h('div', '高低设计偏差'),
+            h('div', '高低设计值'),
             h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
         ]),
         key: 'heightDesignDeviation',
@@ -124,7 +121,7 @@ const columns = [
     },
     {
         title: () => h('div', [
-            h('div', '轨向设计偏差'),
+            h('div', '轨向设计值'),
             h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
         ]),
         key: 'trackDesignDeviation',
@@ -196,49 +193,29 @@ const columns = [
     },
 ];
 
-// 生成假数据
-const tableData = Array.from({ length: 15 }, (_, index) => {
-    const data = {
-        lineName: `线路${index + 1}`,
-        direction: index % 2 === 0 ? '上行' : '下行',
-        mileage: (100.12345 + index * 0.1).toFixed(5),
-        sleeperNo: `SP${index + 1}`,
-        heightDesignDeviation: (0.5 + index * 0.1).toFixed(2),
-        trackDesignDeviation: (0.4 + index * 0.1).toFixed(2),
-        leftHeightActual: (1.0 + index * 0.2).toFixed(2),
-        leftHeightDeviation: (0.2 + index * 0.05).toFixed(2),
-        rightHeightActual: (1.1 + index * 0.2).toFixed(2),
-        rightHeightDeviation: (0.3 + index * 0.05).toFixed(2),
-        leftTrackActual: (0.8 + index * 0.1).toFixed(2),
-        leftTrackDeviation: (0.1 + index * 0.05).toFixed(2),
-        rightTrackActual: (0.9 + index * 0.1).toFixed(2),
-        rightTrackDeviation: (0.15 + index * 0.05).toFixed(2),
-        inspectionDate: `2025-05-${String(index + 1).padStart(2, '0')}`,
-        inspector: `检查员${index + 1}`,
-    };
-    // Set inspection info with description list fields (first row)
-    if (index === 0) {
-        inspectionInfo.value = {
-            inspectionDate: data.inspectionDate,
-            inspector: data.inspector,
-            lineName: data.lineName,
-            direction: data.direction,
-            designRadius: (500 + index * 10).toFixed(2),
-            actualRadius: (505 + index * 10).toFixed(2),
-            curveLength: (200 + index * 5).toFixed(2),
-            circularCurveLength: (150 + index * 3).toFixed(2),
-            transitionCurveLength: (50 + index * 2).toFixed(2),
-            designSuperelevation: (100 + index * 2).toFixed(2),
-            vmax: (120 + index * 5).toFixed(2),
-        };
-    }
-    return data;
-});
+// 表格数据和加载状态
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页配置
-const pagination = {
+const pagination = ref(reactive({
+    pageNo: 1,
     pageSize: 10,
-};
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
 
 // 搜索表单数据
 const searchForm = ref({
@@ -246,40 +223,97 @@ const searchForm = ref({
     mileage: '',
     sleeperNo: '',
     direction: '',
+    pageNo: 1,
+    pageSize: 10,
 });
 
-// 过滤后的数据
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        const {
-            lineName,
-            mileage,
-            sleeperNo,
-            direction,
-        } = searchForm.value;
+// 获取数据
+async function fetchData() {
+    loading.value = true;
+    try {
+        const params = {
+            lineName: searchForm.value.lineName || null,
+            mileage: searchForm.value.mileage || null,
+            sleeperNo: searchForm.value.sleeperNo || null,
+            direction: searchForm.value.direction || null,
+            dataType: selectedType.value, // Pass the selected table type
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
+        };
+        const response = await api.getOlw(params);
+        tableData.value = (response.data.pageData || []).map(item => ({
+            lineName: item.lineName,
+            direction: item.direction,
+            mileage: item.mileage,
+            sleeperNo: item.sleeperNo,
+            heightDesignDeviation: item.heightDesignDeviation,
+            trackDesignDeviation: item.trackDesignDeviation,
+            leftHeightActual: item.leftHeightActual,
+            leftHeightDeviation: item.leftHeightDeviation,
+            rightHeightActual: item.rightHeightActual,
+            rightHeightDeviation: item.rightHeightDeviation,
+            leftTrackActual: item.leftTrackActual,
+            leftTrackDeviation: item.leftTrackDeviation,
+            rightTrackActual: item.rightTrackActual,
+            rightTrackDeviation: item.rightTrackDeviation,
+            inspectionDate: item.inspectionDate,
+            inspector: item.inspector,
+        }));
 
-        return (
-            (!lineName || item.lineName.toLowerCase().includes(lineName.toLowerCase())) &&
-            (!mileage || Number(item.mileage) >= Number(mileage)) &&
-            (!sleeperNo || item.sleeperNo.toLowerCase().includes(sleeperNo.toLowerCase())) &&
-            (!direction || item.direction.toLowerCase().includes(direction.toLowerCase()))
-        );
-    });
-});
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
+        // Set inspection info from the first row
+        if (tableData.value.length > 0) {
+            const firstRow = tableData.value[0];
+            inspectionInfo.value = {
+                inspectionDate: firstRow.inspectionDate,
+                inspector: firstRow.inspector,
+                lineName: firstRow.lineName,
+                direction: firstRow.direction,
+                designRadius: firstRow.designRadius || null,
+                actualRadius: firstRow.actualRadius || null,
+                curveLength: firstRow.curveLength || null,
+                circularCurveLength: firstRow.circularCurveLength || null,
+                transitionCurveLength: firstRow.transitionCurveLength || null,
+                designSuperelevation: firstRow.designSuperelevation || null,
+                vmax: firstRow.vmax || null,
+            };
+        } else {
+            inspectionInfo.value = {};
+        }
+        pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick();
+    } catch (error) {
+        tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+        inspectionInfo.value = {};
+    } finally {
+        loading.value = false;
+    }
 }
 
-function resetSearch() {
+// 搜索和重置
+async function handleSearch() {
+    searchForm.value.pageNo = 1;
+    await fetchData();
+}
+
+async function resetSearch() {
     searchForm.value = {
         lineName: '',
         mileage: '',
         sleeperNo: '',
         direction: '',
+        pageNo: 1,
+        pageSize: 10,
     };
+    await fetchData();
 }
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData();
+});
 </script>
 
 <style scoped>

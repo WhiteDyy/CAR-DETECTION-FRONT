@@ -50,15 +50,19 @@
             </n-grid>
         </n-form>
 
-        <n-data-table :columns="columns" :data="filteredData" :pagination="pagination" :bordered="true"
-            :single-line="false" />
+        <!-- <n-data-table :columns="columns" :data="tableData" :pagination="pagination" :bordered="true"
+            :single-line="false" :loading="loading" /> -->
+        <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
 <script setup>
-import { h, ref, computed } from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { NButton, NTooltip } from 'naive-ui'
-
+import api from './api'
 
 // 控制搜索表单显示状态
 const showSearchForm = ref(false)
@@ -67,7 +71,6 @@ const showSearchForm = ref(false)
 function toggleSearchForm() {
     showSearchForm.value = !showSearchForm.value
 }
-
 
 // 定义表格列
 const columns = [
@@ -96,7 +99,7 @@ const columns = [
     { title: '轨距类型', key: 'gaugeType', width: 120 },
     { title: '轨距加宽', key: 'gaugeWidening', width: 120 },
     { title: '超高', key: 'superelevation', width: 100 },
-    { title: '顺坡率', key: 'gradientRate', width: 100 },
+    { title: '超高顺坡率', key: 'gradientRate', width: 100 },
     { title: '起点切线长', key: 'startTangentLength', width: 140 },
     { title: '起缓和线长', key: 'startTransitionLength', width: 140 },
     { title: '终缓和线长', key: 'endTransitionLength', width: 140 },
@@ -105,34 +108,32 @@ const columns = [
     { title: '平均速度', key: 'averageSpeed', width: 120 },
 ]
 
-// 生成假数据
-const tableData = Array.from({ length: 15 }, (_, index) => ({
-    lineNo: `LN00${index + 1}`,
-    direction: index % 2 === 0 ? '上行' : '下行',
-    lineName: `线路${index + 1}`,
-    startMileage: (100.12345 + index * 10).toFixed(5),
-    endMileage: (110.12345 + index * 10).toFixed(5),
-    curveDirection: index % 2 === 0 ? '左曲' : '右曲',
-    curveRadius: (500 + index * 50).toFixed(2),
-    turningAngle: (15 + index * 2).toFixed(2),
-    gaugeType: `GT${index % 3 + 1}`,
-    gaugeWidening: (5 + index * 0.5).toFixed(2),
-    superelevation: (100 + index * 10).toFixed(2),
-    gradientRate: (0.5 + index * 0.1).toFixed(2),
-    startTangentLength: (50 + index * 5).toFixed(2),
-    startTransitionLength: (30 + index * 3).toFixed(2),
-    endTransitionLength: (30 + index * 3).toFixed(2),
-    endTangentLength: (50 + index * 5).toFixed(2),
-    totalCurveLength: (200 + index * 20).toFixed(2),
-    averageSpeed: (80 + index * 5).toFixed(2),
-}))
+// 表格数据和加载状态
+const tableData = ref([])
+const loading = ref(false)
 
 // 分页配置
-const pagination = {
+const pagination = ref(reactive({
+    pageNo: 1,
     pageSize: 10,
-}
+    total: 0,
+    pageCount: 1,
+    onChange: (pageNo) => {
+        pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
+        searchForm.value.pageNo = pageNo;
+        fetchData();
+    },
+    onUpdatePageSize: (pageSize) => {
+        pagination.value.pageSize = pageSize; // 同步更新
+        searchForm.value.pageSize = pageSize;
+        pagination.value.pageNo = 1;
+        searchForm.value.pageNo = 1;
+        fetchData();
+    }
+}));
 
-// 搜索表单数据
+
+
 const searchForm = ref({
     lineNo: '',
     lineName: '',
@@ -141,47 +142,82 @@ const searchForm = ref({
     direction: '',
     curveDirection: '',
     gaugeType: '',
-})
+    pageNo: 1,
+    pageSize: 10
+});
 
-// 过滤后的数据
-const filteredData = computed(() => {
-    return tableData.filter((item) => {
-        const {
-            lineNo,
-            lineName,
-            startMileage,
-            endMileage,
-            direction,
-            curveDirection,
-            gaugeType,
-        } = searchForm.value
-
-        return (
-            (!lineNo || item.lineNo.toLowerCase().includes(lineNo.toLowerCase())) &&
-            (!lineName || item.lineName.toLowerCase().includes(lineName.toLowerCase())) &&
-            (!startMileage || Number(item.startMileage) >= Number(startMileage)) &&
-            (!endMileage || Number(item.endMileage) <= Number(endMileage)) &&
-            (!direction || item.direction.toLowerCase().includes(direction.toLowerCase())) &&
-            (!curveDirection || item.curveDirection.toLowerCase().includes(curveDirection.toLowerCase())) &&
-            (!gaugeType || item.gaugeType.toLowerCase().includes(gaugeType.toLowerCase()))
-        )
-    })
-})
-
-// 搜索和重置
-function handleSearch() {
-    // 触发 filteredData 的重新计算
+// 获取数据
+async function fetchData() {
+    loading.value = true;
+    try {
+        const params = {
+            line_no: searchForm.value.lineNo,
+            line_name: searchForm.value.lineName,
+            start_mileage: searchForm.value.startMileage,
+            end_mileage: searchForm.value.endMileage,
+            direction: searchForm.value.direction,
+            curve_direction: searchForm.value.curveDirection,
+            gauge_type: searchForm.value.gaugeType,
+            pageNo: pagination.value.pageNo, // 使用 pagination.pageNo
+            pageSize: pagination.value.pageSize // 使用 pagination.pageSize
+        };
+        const response = await api.getCurveList(params);
+        tableData.value = (response.data.pageData || []).map(item => ({
+            id: item.id,
+            lineNo: item.lineNo,
+            direction: item.direction,
+            lineName: item.lineName,
+            startMileage: item.startMileage,
+            endMileage: item.endMileage,
+            curveDirection: item.curveDirection,
+            curveRadius: item.curveRadius,
+            turningAngle: item.turningAngle,
+            gaugeType: item.gaugeType,
+            gaugeWidening: item.gaugeWidening,
+            superelevation: item.superelevation,
+            gradientRate: item.gradientRate,
+            startTangentLength: item.startTangentLength,
+            startTransitionLength: item.startTransitionLength,
+            endTransitionLength: item.endTransitionLength,
+            endTangentLength: item.endTangentLength,
+            totalCurveLength: item.totalCurveLength,
+            averageSpeed: item.averageSpeed,
+        }));
+        pagination.value.total = response.data.total || 0;
+        pagination.value.pageCount = Math.ceil(pagination.value.total / pagination.value.pageSize);
+        await nextTick();
+    } catch (error) {
+        console.error('获取数据失败:', error);
+        tableData.value = [];
+        pagination.value.total = 0;
+        pagination.value.pageCount = 1;
+    } finally {
+        loading.value = false;
+    }
 }
 
-function resetSearch() {
+async function handleSearch() {
+    searchForm.value.pageNo = 1;
+    await fetchData();
+}
+
+async function resetSearch() {
     searchForm.value = {
         lineNo: '',
         lineName: '',
         startMileage: '',
         endMileage: '',
-        idom: '',
+        direction: '',
         curveDirection: '',
         gaugeType: '',
-    }
+        pageNo: 1,
+        pageSize: 10
+    };
+    await fetchData();
 }
+
+// 页面加载时获取数据
+onMounted(() => {
+    fetchData()
+})
 </script>
