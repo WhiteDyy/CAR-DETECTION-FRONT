@@ -240,7 +240,7 @@ async function fetchData() {
             pageSize: pagination.value.pageSize // 使用 pagination.pageSize
         }
         const response = await api.getTqi(params);
-        console.log('后端返回数据:', response.data) // 调试：打印后端数据
+        console.warn('后端返回数据:', response.data) // 调试：打印后端数据
 
         tableData.value = (response.data.pageData || []).map(item => {
             const parsedDate = parseDate(item.inspectionDate)

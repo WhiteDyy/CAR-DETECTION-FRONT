@@ -16,7 +16,7 @@ const realTimeData = ref({
 let timerId = null
 
 onMounted(() => {
-  console.log('Initial realTimeData:', realTimeData.value)
+  console.warn('Initial realTimeData:', realTimeData.value)
 
   // 可选：启用定时器以测试动态更新
   // timerId = setInterval(() => {
@@ -25,14 +25,14 @@ onMounted(() => {
   //         S2: '停止',
   //         S3: String(Math.floor(Math.random() * 100)), // 随机数示例
   //     };
-  //     console.log('Updated realTimeData:', realTimeData.value);
+  //     console.warn('Updated realTimeData:', realTimeData.value);
   // }, 5000);
 })
 
 onUnmounted(() => {
   if (timerId) {
     clearInterval(timerId)
-    console.log('Timer cleared on component unmount')
+    console.warn('Timer cleared on component unmount')
     timerId = null
   }
 })

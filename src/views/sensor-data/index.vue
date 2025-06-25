@@ -158,7 +158,7 @@ const handleMessage = (data) => {
     latestData.value = latestData.value.slice(-5);
   }
 
-  console.log('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length);
+  console.warn('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length);
   updateCharts();
 };
 
@@ -170,14 +170,14 @@ const resetStateOnReconnect = () => {
 };
 
 onMounted(() => {
-  console.log('Mounting, adding SSE listener');
+  console.warn('Mounting, adding SSE listener');
   sse.addEventListener('sensorData', handleMessage);
   sse.addEventListener('reconnect', resetStateOnReconnect);
   sse.start();
 });
 
 onUnmounted(() => {
-  console.log('Unmounting, removing SSE listener');
+  console.warn('Unmounting, removing SSE listener');
   sse.removeEventListener('sensorData', handleMessage);
   sse.removeEventListener('reconnect', resetStateOnReconnect);
   sse.stop();

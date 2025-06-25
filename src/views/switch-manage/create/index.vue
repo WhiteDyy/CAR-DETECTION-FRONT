@@ -149,21 +149,21 @@ const generateId = (prefix = 'element') => `${prefix}_${Date.now()}`
 function copySelected() {
   const activeObjects = fabricCanvas.getActiveObjects()
   if (activeObjects.length === 0) {
-    console.log('请先选中要复制的元素')
+    console.warn('请先选中要复制的元素')
     return
   }
 
   if (activeObjects.length === 1) {
     activeObjects[0].clone((cloned) => {
       copiedObjects.value = [cloned]
-      console.log('已复制单个对象:', cloned.id)
+      console.warn('已复制单个对象:', cloned.id)
     })
   }
   else {
     const group = new fabric.Group(activeObjects)
     group.clone((cloned) => {
       copiedObjects.value = [cloned]
-      console.log('已复制多个对象为组:', cloned.id)
+      console.warn('已复制多个对象为组:', cloned.id)
     })
   }
 }
@@ -171,7 +171,7 @@ function copySelected() {
 // 粘贴复制的对象
 function pasteCopied() {
   if (!copiedObjects.value || copiedObjects.value.length === 0) {
-    console.log('没有可粘贴的对象')
+    console.warn('没有可粘贴的对象')
     return
   }
 
@@ -216,7 +216,7 @@ function pasteCopied() {
       fabricCanvas.setActiveObjects(clonedObjects)
     }
     fabricCanvas.requestRenderAll()
-    console.log('已粘贴对象:', clonedObjects.map(obj => obj.id))
+    console.warn('已粘贴对象:', clonedObjects.map(obj => obj.id))
   }, 50)
 }
 
@@ -249,7 +249,7 @@ function uploadImage(event) {
       fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas))
       backgroundImage.value = true
 
-      console.log(`画布尺寸设置为图像原始尺寸: ${imgWidth}x${imgHeight}`)
+      console.warn(`画布尺寸设置为图像原始尺寸: ${imgWidth}x${imgHeight}`)
     })
   }
   reader.readAsDataURL(file)
@@ -378,7 +378,7 @@ function startDrawingPolyline() {
   isDrawingPolyline.value = true
   polylinePoints.value = []
   fabricCanvas.selection = false // 禁用选择模式
-  console.log('开始绘制折线，请点击画布添加点，双击结束')
+  console.warn('开始绘制折线，请点击画布添加点，双击结束')
 
   // 监听鼠标点击添加点
   fabricCanvas.on('mouse:down', onMouseDown)
@@ -477,14 +477,14 @@ function finishDrawingPolyline() {
 function groupSelected() {
   const activeObjects = fabricCanvas.getActiveObjects()
   if (activeObjects.length < 2) {
-    console.log('请至少选中两个元素进行组合')
+    console.warn('请至少选中两个元素进行组合')
     return
   }
 
   // 获取当前选中区域的边界
   const selection = fabricCanvas.getActiveObject()
   if (!selection) {
-    console.log('未找到选中对象')
+    console.warn('未找到选中对象')
     return
   }
 
@@ -533,7 +533,7 @@ function groupSelected() {
   fabricCanvas.requestRenderAll()
 
   // 调试日志
-  console.log('组合完成，新组:', {
+  console.warn('组合完成，新组:', {
     id: group.id,
     left: group.left,
     top: group.top,
@@ -552,7 +552,7 @@ function groupSelected() {
 // const groupSelected = () => {
 //     const activeObjects = fabricCanvas.getActiveObjects();
 //     if (activeObjects.length < 2) {
-//         console.log('请至少选中两个元素进行组合');
+//         console.warn('请至少选中两个元素进行组合');
 //         return;
 //     }
 
@@ -617,7 +617,7 @@ function groupSelected() {
 //         children: group.getObjects().map(obj => obj.id), // 记录子元素 ID
 //     });
 
-//     console.log('组合完成，新组:', {
+//     console.warn('组合完成，新组:', {
 //         id: group.id,
 //         left: group.left,
 //         top: group.top,
@@ -635,7 +635,7 @@ function groupSelected() {
 // const groupSelected = () => {
 //     const activeObjects = fabricCanvas.getActiveObjects();
 //     if (activeObjects.length < 2) {
-//         console.log('请至少选中两个元素进行组合');
+//         console.warn('请至少选中两个元素进行组合');
 //         return;
 //     }
 
@@ -701,7 +701,7 @@ function groupSelected() {
 //         children: group.getObjects().map(obj => obj.id), // 记录子元素 ID
 //     });
 
-//     console.log('组合完成，新组:', {
+//     console.warn('组合完成，新组:', {
 //         id: group.id,
 //         left: group.left,
 //         top: group.top,
@@ -720,7 +720,7 @@ function groupSelected() {
 function deleteSelected() {
   const activeObjects = fabricCanvas.getActiveObjects()
   if (activeObjects.length === 0) {
-    console.log('请先选中要删除的元素')
+    console.warn('请先选中要删除的元素')
     return
   }
 
@@ -732,22 +732,22 @@ function deleteSelected() {
   fabricCanvas.discardActiveObject()
   fabricCanvas.requestRenderAll()
 
-  console.log('已删除选中元素，剩余元素:', elements.value)
+  console.warn('已删除选中元素，剩余元素:', elements.value)
 }
 
 // 绑定元素ID
 function bindElementId() {
   const activeObject = fabricCanvas.getActiveObject()
   if (!activeObject) {
-    console.log('请先选中一个元素')
+    console.warn('请先选中一个元素')
     return
   }
   if (elements.value.some(el => el.id === selectedElementId.value)) {
-    console.log('ID已存在，请使用唯一ID')
+    console.warn('ID已存在，请使用唯一ID')
     return
   }
   if (!selectedElementId.value) {
-    console.log('请输入一个有效的ID')
+    console.warn('请输入一个有效的ID')
     return
   }
 
@@ -764,13 +764,13 @@ function bindElementId() {
       top: activeObject.top,
     })
   }
-  console.log(`已将元素绑定ID: ${selectedElementId.value}`)
+  console.warn(`已将元素绑定ID: ${selectedElementId.value}`)
   fabricCanvas.requestRenderAll()
 }
 
 // const saveCanvas = () => {
 //     if (!switchId.value) {
-//         console.log('请输入道岔整体ID');
+//         console.warn('请输入道岔整体ID');
 //         return;
 //     }
 
@@ -778,7 +778,7 @@ function bindElementId() {
 //     const backgroundImage = fabricCanvas.backgroundImage;
 
 //     if (!backgroundImage) {
-//         console.log('未找到背景图像，无法保存');
+//         console.warn('未找到背景图像，无法保存');
 //         return;
 //     }
 
@@ -812,12 +812,12 @@ function bindElementId() {
 
 //     // 保存到 localStorage
 //     localStorage.setItem(`canvasData_${switchId.value}`, JSON.stringify(canvasData));
-//     console.log(`画布数据已保存到 localStorage (ID: ${switchId.value}):`, canvasData);
+//     console.warn(`画布数据已保存到 localStorage (ID: ${switchId.value}):`, canvasData);
 // };
 
 function saveCanvas() {
   if (!switchId.value) {
-    console.log('请输入道岔整体ID')
+    console.warn('请输入道岔整体ID')
     return
   }
 
@@ -825,7 +825,7 @@ function saveCanvas() {
   const backgroundImage = fabricCanvas.backgroundImage
 
   if (!backgroundImage) {
-    console.log('未找到背景图像，无法保存')
+    console.warn('未找到背景图像，无法保存')
     return
   }
 
@@ -860,7 +860,7 @@ function saveCanvas() {
   }
 
   localStorage.setItem(`canvasData_${switchId.value}`, JSON.stringify(canvasData))
-  console.log(`画布数据已保存到 localStorage (ID: ${switchId.value}):`, canvasData)
+  console.warn(`画布数据已保存到 localStorage (ID: ${switchId.value}):`, canvasData)
 }
 
 watch(

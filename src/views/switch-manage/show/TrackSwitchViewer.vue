@@ -129,7 +129,7 @@ function updateCanvasElements(data) {
 
   fabricCanvas.forEachObject((obj) => {
     const dynamicValue = data[obj.id]
-    console.log(`处理顶级对象 - ID: ${obj.id}, 类型: ${obj.type}, 值: ${dynamicValue}`)
+    console.warn(`处理顶级对象 - ID: ${obj.id}, 类型: ${obj.type}, 值: ${dynamicValue}`)
 
     if (dynamicValue) {
       if (obj.type === 'group') {
@@ -137,26 +137,26 @@ function updateCanvasElements(data) {
         groupObjects.forEach((subObj) => {
           if (subObj.type === 'text' || subObj.type === 'textbox') {
             subObj.set('text', dynamicValue)
-            console.log(`更新组内文字 - 组ID: ${obj.id}, 子ID: ${subObj.id}, 新值: ${dynamicValue}`)
+            console.warn(`更新组内文字 - 组ID: ${obj.id}, 子ID: ${subObj.id}, 新值: ${dynamicValue}`)
           }
         })
       }
       else if (obj.type === 'text' || obj.type === 'textbox') {
         obj.set('text', dynamicValue)
-        console.log(`更新独立文字 - ID: ${obj.id}, 新值: ${dynamicValue}`)
+        console.warn(`更新独立文字 - ID: ${obj.id}, 新值: ${dynamicValue}`)
       }
       else if (obj.type === 'circle') {
         obj.set('fill', dynamicValue)
-        console.log(`更新圆形 - ID: ${obj.id}, 新值: ${dynamicValue}`)
+        console.warn(`更新圆形 - ID: ${obj.id}, 新值: ${dynamicValue}`)
       }
       else if (obj.type === 'path') {
         obj.set('fill', dynamicValue)
-        console.log(`更新路径 - ID: ${obj.id}, 新值: ${dynamicValue}`)
+        console.warn(`更新路径 - ID: ${obj.id}, 新值: ${dynamicValue}`)
       }
     }
   })
   fabricCanvas.renderAll()
-  console.log('画布已渲染')
+  console.warn('画布已渲染')
 }
 
 watch(

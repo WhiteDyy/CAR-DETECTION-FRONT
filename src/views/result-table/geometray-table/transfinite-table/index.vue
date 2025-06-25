@@ -289,7 +289,7 @@ async function fetchData() {
             pageSize: pagination.value.pageSize // 使用 pagination.pageSize
         };
         const response = await api.getTransfinite(params); // 使用 api.getTransfinite
-        console.log('API 响应:', response); // 调试 API 响应
+        console.warn('API 响应:', response); // 调试 API 响应
         tableData.value = (response.data.pageData || []).map(item => ({
             id: item.id,
             mileage: item.mileage,

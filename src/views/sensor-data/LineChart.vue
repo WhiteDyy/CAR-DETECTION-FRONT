@@ -116,7 +116,7 @@ const chartOption = computed(() => ({
 }));
 
 const onChartRendered = () => {
-  // console.log(`Chart ${props.title} rendered`);
+  // console.warn(`Chart ${props.title} rendered`);
 };
 </script>
 

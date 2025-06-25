@@ -126,13 +126,13 @@ const pagination = ref(reactive({
     total: 0,
     pageCount: 1,
     onChange: (pageNo) => {
-        console.log('切换页面到:', pageNo);
+        console.warn('切换页面到:', pageNo);
         pagination.value.pageNo = pageNo; // 直接更新 pagination.pageNo
         searchForm.value.pageNo = pageNo;
         fetchData();
     },
     onUpdatePageSize: (pageSize) => {
-        console.log('每页条数变更为:', pageSize);
+        console.warn('每页条数变更为:', pageSize);
         pagination.value.pageSize = pageSize; // 同步更新
         searchForm.value.pageSize = pageSize;
         pagination.value.pageNo = 1;

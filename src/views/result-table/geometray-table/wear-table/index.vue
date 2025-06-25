@@ -120,7 +120,7 @@ const searchForm = ref({
 
 // 获取数据
 async function fetchData() {
-    console.log("挂载时搜索数据！！！！", searchForm.value.mileage);
+    console.warn("挂载时搜索数据！！！！", searchForm.value.mileage);
     loading.value = true;
     try {
         const params = {
@@ -134,9 +134,9 @@ async function fetchData() {
             pageNo: searchForm.value.pageNo,
             pageSize: searchForm.value.pageSize // 改为 pageSize
         };
-        console.log("传送的参数：", params);
+        console.warn("传送的参数：", params);
         const response = await api.getWearTable(params);
-        console.log("后端返回数据：", response.data);
+        console.warn("后端返回数据：", response.data);
         tableData.value = (response.data.pageData || []).map(item => ({
             id: item.id,
             mileage: item.mileage,
