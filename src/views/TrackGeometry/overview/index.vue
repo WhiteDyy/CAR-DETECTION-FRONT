@@ -35,7 +35,7 @@
                     <n-layout>
                         <n-layout-content content-style="padding: 5px;">
                             <TrendChart :data="chartData" :parameters="parameterList" :color-map="colorMap"
-                                :x-axis-data="xAxisData" :tag-positions="tagPositions" :not-merge="true" 
+                                :x-axis-data="xAxisData" :tag-positions="tagPositions" :not-merge="true"
                                 :sleeper-positions="sleeperPositions" />
                         </n-layout-content>
                     </n-layout>
@@ -80,104 +80,17 @@ const chartData = ref({
 const tagPositions = ref([])
 const sleeperPositions = ref([])
 
+
+
 // 计数器与里程状态
 
 let intervalId
 
-/**
- * 更新所有图表数据，并维持滑动窗口
- * @param {object} newData - 当前时刻的曲线图数据
- * @param {object|null} newTag - 当前时刻可能生成的新标签
- * @param {object|null} newSleeper - 当前时刻可能生成的新轨枕
- */
-// function updateChartData(newData, newTag, newSleeper) {
-//     const maxDataPoints = 100
-
-//     // 1. 推入新数据
-//     xAxisData.value.push(newData.mileage)
-//     for (const param of parameterList.value) {
-//         chartData.value[param].push(newData[param.toLowerCase()] || null) // 简化key的对应关系
-//     }
-//     if (newTag) {
-//         tagPositions.value.push(newTag)
-//     }
-//     if (newSleeper) {
-//         sleeperPositions.value.push(newSleeper)
-//     }
-
-//     // 2. 维持窗口大小，当数据超出最大点数时，从左侧移出旧数据
-//     if (xAxisData.value.length > maxDataPoints) {
-//         // 移出曲线图的旧数据
-//         xAxisData.value.shift()
-//         for (const param of parameterList.value) {
-//             chartData.value[param].shift()
-//         }
-
-//         // 移出标记点的旧数据：检查最左侧的标记点是否已“滑出”可视范围
-//         const visibleStartMileage = xAxisData.value[0]
-//         if (tagPositions.value.length > 0 && tagPositions.value[0].mileage < visibleStartMileage) {
-//             tagPositions.value.shift()
-//         }
-//         if (sleeperPositions.value.length > 0 && sleeperPositions.value[0].mileage < visibleStartMileage) {
-//             sleeperPositions.value.shift()
-//         }
-//     }
-// }
-
 
 let currentMileageInDecimeters = 0
 let tagCounter = 1
-let sleeperCounter = 1
-
-
-
-/**
- * 生成当前时刻的数据点
- */
-// function generateDataPoint() {
-//     const currentMileageInMeters = currentMileageInDecimeters / 10.0
-
-//     // 判定当前位置是否需要生成标记点
-//     const isTagLocation = (currentMileageInDecimeters > 0 && currentMileageInDecimeters % 100 === 0) // 10米
-//     const isSleeperLocation = (currentMileageInDecimeters > 0 && currentMileageInDecimeters % 6 === 0) // 0.6米
-
-
-
-//     let newTag = null
-//     let newSleeper = null
-
-//     // 如果是标签位
-//     if (isTagLocation) {
-//         newTag = { mileage: currentMileageInMeters, id: tagCounter++ }
-//         sleeperCounter = 1 // 【新需求】重置轨枕计数器
-//     }
-
-//     // 如果是轨枕位
-//     if (isSleeperLocation) {
-//         newSleeper = { mileage: currentMileageInMeters, id: sleeperCounter++ }
-//     }
-
-//     // 准备要更新的曲线图数据
-//     const chartPointData = {
-//         mileage: currentMileageInMeters,
-//         轨距: 1435 + Math.round(Math.random() * 4 - 2),
-//         轨距变化率: Math.random() * 0.2 - 0.1,
-//         左高低: 2 + Math.random() * 2,
-//         右高低: 2 + Math.random() * 2,
-//         左轨向: 1 + Math.random() * 1,
-//         右轨向: 1 + Math.random() * 1,
-//         水平: Math.random() * 2 - 1,
-//         三角坑: Math.random() * 0.5,
-//         垂直磨耗: 0.5 + Math.random() * 0.5,
-//         侧面磨耗: 0.3 + Math.random() * 0.3,
-//     }
-
-//     // 将所有新生成的数据统一交由 updateChartData 函数处理
-//     updateChartData(chartPointData, newTag, newSleeper)
-
-//     currentMileageInDecimeters += 1
-// }
-
+let sleeperDisplayCounter = 1; // 用于显示的、会重置的序号
+let sleeperUniqueCounter = 1;  // 用于内部的、永不重置的唯一ID
 
 /**
  * 更新所有图表数据，并维持滑动窗口
@@ -236,15 +149,19 @@ function generateDataPoint() {
     let newSleeper = null
 
     if (isTagLocation) {
-        newTag = { mileage: currentMileageInMeters, id: tagCounter++ }
-        // --- START: FIX #2 ---
-        // **【修复2】** 移除此行，确保轨枕ID全局唯一，不会被重置
-        // sleeperCounter = 1
-        // --- END: FIX #2 ---
+        newTag = { mileage: currentMileageInMeters, id: tagCounter++ };
+        // 【修改2】重置的是“显示序号”计数器
+        sleeperDisplayCounter = 1;
     }
 
     if (isSleeperLocation) {
-        newSleeper = { mileage: currentMileageInMeters, id: sleeperCounter++ }
+        // 【修改3】生成新的数据结构，包含两个ID
+        newSleeper = {
+            mileage: currentMileageInMeters,
+            displayId: sleeperDisplayCounter++,
+            // uniqueId可以是一个纯数字，或加上前缀以保证更强的唯一性
+            uniqueId: `sleeper-${sleeperUniqueCounter++}`,
+        };
     }
 
     // 准备要更新的曲线图数据 (注意key的大小写要与parameterList一致)
@@ -265,6 +182,8 @@ function generateDataPoint() {
     updateChartData(chartPointData, newTag, newSleeper)
     currentMileageInDecimeters += 1
 }
+
+
 onMounted(() => {
     // 注意定时器速度调整为100ms，以匹配0.1米的步进单位
     intervalId = setInterval(generateDataPoint, 1000)

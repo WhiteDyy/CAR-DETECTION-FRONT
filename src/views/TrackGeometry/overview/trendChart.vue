@@ -66,10 +66,12 @@ const chartOption = computed(() => {
     const sleeperData = props.sleeperPositions
         .filter(p => p.mileage >= visibleStartMileage && p.mileage <= visibleEndMileage)
         .map(sleeper => ({
-            name: `轨枕 ${sleeper.id}`,
+            // name: `轨枕 ${sleeper.id}`,
+            name: `轨枕 ${sleeper.uniqueId}`,
             // 3. 【Y轴分离】将Y值设为 -0.5，使其显示在标记区域下半部分
             value: [sleeper.mileage, 0],
-            id: sleeper.id,
+            id: sleeper.displayId ,
+            // displayId: sleeper.displayId,
         }));
 
     const grids = props.parameters
