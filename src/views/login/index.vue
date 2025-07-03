@@ -75,14 +75,14 @@
         />
 
         <div class="mt-20 flex items-center">
-          <n-button
+          <!-- <n-button
             class="h-40 flex-1 rounded-5 text-16"
             type="primary"
             ghost
             @click="quickLogin()"
           >
             一键体验
-          </n-button>
+          </n-button> -->
 
           <n-button
             class="ml-32 h-40 flex-1 rounded-5 text-16"
@@ -121,11 +121,11 @@ const initCaptcha = throttle(() => {
   captchaUrl.value = `${import.meta.env.VITE_AXIOS_BASE_URL}/auth/captcha?${Date.now()}`
 }, 500)
 
-const localLoginInfo = lStorage.get('loginInfo')
-if (localLoginInfo) {
-  loginInfo.value.username = localLoginInfo.username || ''
-  loginInfo.value.password = localLoginInfo.password || ''
-}
+// const localLoginInfo = lStorage.get('loginInfo')
+// if (localLoginInfo) {
+//   loginInfo.value.username = localLoginInfo.username || ''
+//   loginInfo.value.password = localLoginInfo.password || ''
+// }
 initCaptcha()
 
 function quickLogin() {

@@ -1,438 +1,428 @@
-<template>
+<!-- <template>
   <AppPage show-footer>
-    <div class="stats-container">
-      <n-flex :wrap="false" justify="space-between" align="center">
-        <n-card class="stats-card">
-          <n-statistic label="病害检测总数">
-            1,234,123
-          </n-statistic>
-        </n-card>
-        <n-card class="stats-card">
-          <n-statistic label="设备总数">
-            10台
-          </n-statistic>
-        </n-card>
-        <n-card class="stats-card">
-          <n-statistic label="设备运行总时长">
-            1000h
-          </n-statistic>
-        </n-card>
-        <n-card class="stats-card">
-          <n-statistic label="设备运行总里程">
-            1000km
-          </n-statistic>
-        </n-card>
-        <n-card class="stats-card">
-          <n-statistic label="设备运行总里程">
-            1000km
-          </n-statistic>
-        </n-card>
-      </n-flex>
-    </div>
+    <n-space vertical :size="16" class="mt-12">
+      <n-card title="实时病害图像" segmented>
+        <n-image :src="imageSrc" alt="实时病害图像" preview class="full-image" />
+      </n-card>
 
-    <n-card class="mt-12" title="实时病害图像" segmented>
-      <div class="card-container">
-        <!-- 第一个div：图像相关信息描述列表 -->
-        <div class="info-list">
-          <n-statistic label="当前时间" :value="currentTime">
-            <template #prefix>
-              <n-icon class="i-mdi:clock-outline text-blue-500" />
-            </template>
-          </n-statistic>
-          <n-statistic label="当前位置" :value="currentPosition">
-            <template #prefix>
-              <n-icon class="i-mdi:map-marker-outline text-blue-500" />
-            </template>
-            <template #suffix>
-              公里
-            </template>
-          </n-statistic>
-          <n-statistic label="当前速度" :value="currentSpeed">
-            <template #prefix>
-              <n-icon class="i-mdi:speedometer text-blue-500" />
-            </template>
-            <template #suffix>
-              公里/小时
-            </template>
-          </n-statistic>
-          <n-statistic label="采集时间" :value="captureTime">
-            <template #prefix>
-              <n-icon class="i-mdi:timer-outline text-blue-500" />
-            </template>
-          </n-statistic>
-          <n-statistic label="采集位置" :value="capturePosition">
-            <template #prefix>
-              <n-icon class="i-mdi:pin-outline text-blue-500" />
-            </template>
-            <template #suffix>
-              公里
-            </template>
-          </n-statistic>
-          <n-statistic label="采集速度" :value="captureSpeed">
-            <template #prefix>
-              <n-icon class="i-mdi:car text-blue-500" />
-            </template>
-            <template #suffix>
-              公里/小时
-            </template>
-          </n-statistic>
-        </div>
+      <n-grid x-gap="16" y-gap="16" cols="1 s:1 m:2 l:2" responsive="screen">
+        <n-grid-item>
+          <n-card title="实时状态" segmented>
+            <n-space vertical :size="24">
+              <n-statistic label="当前时间" :value="currentTime">
+                <template #prefix>
+                  <n-icon class="i-mdi:clock-outline text-blue-500" />
+                </template>
+              </n-statistic>
+              <n-statistic label="当前位置 (经纬度)" :value="currentPosition">
+                <template #prefix>
+                  <n-icon class="i-mdi:map-marker-outline text-blue-500" />
+                </template>
+              </n-statistic>
+              <n-statistic label="当前速度">
+                <template #prefix>
+                  <n-icon class="i-mdi:speedometer text-blue-500" />
+                </template>
+                <template #default>
+                  {{ currentSpeed }}
+                </template>
+                <template #suffix>
+                  公里/小时
+                </template>
+              </n-statistic>
+            </n-space>
+          </n-card>
+        </n-grid-item>
 
-        <!-- 第二个div：图像和公里标示意图 -->
-        <div class="image-container">
-          <n-image :src="imageSrc" alt="overview" preview class="full-image" />
-        </div>
-
-        <!-- 第三个div：当前检测任务信息 -->
-        <div class="task-info">
-          <n-statistic label="起点公里标" :value="startKm">
-            <template #prefix>
-              <n-icon class="i-mdi:skip-previous-outline text-green-500" />
-            </template>
-            <template #suffix>
-              公里
-            </template>
-          </n-statistic>
-          <n-statistic label="终点公里标" :value="endKm">
-            <template #prefix>
-              <n-icon class="i-mdi:skip-next-outline text-green-500" />
-            </template>
-            <template #suffix>
-              公里
-            </template>
-          </n-statistic>
-          <n-statistic label="已行驶里程/总里程" :value="traveledDistance">
-            <template #prefix>
-              <n-icon class="i-mdi:road-variant text-green-500" />
-            </template>
-            <template #suffix>
-              / {{ totalDistance }} 公里
-            </template>
-          </n-statistic>
-          <n-statistic label="已采集数据总量" :value="totalDataCollected">
-            <template #prefix>
-              <n-icon class="i-mdi:cloud-download-outline text-orange-500" />
-            </template>
-            <template #suffix>
-              MB
-            </template>
-          </n-statistic>
-          <n-statistic label="已采集图片数量" :value="imageCount">
-            <template #prefix>
-              <n-icon class="i-mdi:image-outline text-orange-500" />
-            </template>
-            <template #suffix>
-              张
-            </template>
-          </n-statistic>
-          <n-statistic label="已检测到的病害数量" :value="defectCount">
-            <template #prefix>
-              <n-icon class="i-mdi:alert-circle-outline text-red-500" />
-            </template>
-            <template #suffix>
-              个
-            </template>
-          </n-statistic>
-        </div>
-      </div>
-    </n-card>
-    <n-card>
-      <div class="h-200">
-        <VChart :option="trendOption" autoresize />
-      </div>
-    </n-card>
+        <n-grid-item>
+          <n-card title="病害统计 (当前图像)" segmented>
+            <n-list hoverable clickable>
+              <n-list-item v-for="defect in defectsData" :key="defect.id">
+                <template #prefix>
+                  <n-icon :class="defect.icon" :style="{ color: defect.color }" />
+                </template>
+                <div class="defect-item">
+                  <span>{{ defect.category }}</span>
+                  <n-tag :type="defect.count > 0 ? 'error' : 'success'" round>
+                    {{ defect.count }} 个
+                  </n-tag>
+                </div>
+              </n-list-item>
+            </n-list>
+          </n-card>
+        </n-grid-item>
+      </n-grid>
+    </n-space>
   </AppPage>
 </template>
 
 <script setup>
-import { useUserStore } from '@/store'
+import { ref } from 'vue'
 
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import * as echarts from 'echarts/core'
-import { UniversalTransition } from 'echarts/features'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
+// 图片路径（请确保路径正确）
+// const imageSrc = new URL('@/assets/images/test.jpg', import.meta.url).href
+// http://localhost:8089/images/
+const imageSrc = "/api/images/20250627_092449488_65ac5cdc.jpg"
+// --- 响应式数据定义 ---
 
-const userStore = useUserStore()
+// 实时状态数据
+const currentTime = ref('2025-06-27 10:30:00')
+const currentPosition = ref('116.3975°E, 39.9087°N') // 经纬度格式
+const currentSpeed = ref(80)
 
-echarts.use([
-  TooltipComponent,
-  GridComponent,
-  LegendComponent,
-  BarChart,
-  LineChart,
-  CanvasRenderer,
-  UniversalTransition,
-  PieChart,
+// 病害统计数据 (针对当前显示的图像)
+const defectsData = ref([
+  { id: 1, category: '钢轨病害', count: 2, icon: 'i-mdi:railroad-light', color: '#D9534F' },
+  { id: 2, category: '扣件病害', count: 5, icon: 'i-mdi:screw-lag', color: '#F0AD4E' },
+  { id: 3, category: '轨枕病害', count: 1, icon: 'i-mdi:view-grid-outline', color: '#5BC0DE' },
+  { id: 4, category: '道床病害', count: 0, icon: 'i-mdi:dots-grid', color: '#5CB85C' },
 ])
 
-const trendOption = ref({
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'line',
-      lineStyle: {
-        color: '#666',
-        type: 'dashed',
-      },
-    },
-    formatter: (params) => {
-      const data = params[0]
-      return `${data.name}: ${data.value} 条消息`
-    },
-  },
-  legend: {
-    top: '2%',
-    data: ['消息数量'],
-  },
-  grid: {
-    left: '5px',
-    right: '5px',
-    top: '30px',
-    bottom: '5px',
-    containLabel: true,
-  },
-  xAxis: [
-    {
-      type: 'category',
-      data: [], // 初始为空，动态更新
-      axisPointer: {
-        type: 'shadow',
-      },
-      axisTick: {
-        alignWithLabel: true,
-      },
-      axisLabel: {
-        interval: 1, // 每 5 分钟显示一个标签
-        rotate: 45,
-      },
-    },
-  ],
-  yAxis: [
-    {
-      type: 'value',
-      name: '消息数量 (条)',
-      min: 0,
-      max: 1000,
-      interval: 200,
-      axisLabel: {
-        formatter: '{value}',
-      },
-    },
-  ],
-  series: [
-    {
-      name: '消息数量',
-      type: 'line',
-      smooth: true,
-      lineStyle: {
-        color: '#1890ff',
-        width: 2,
-      },
-      itemStyle: {
-        color: '#1890ff',
-      },
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(24, 144, 255, 0.3)' },
-            { offset: 1, color: 'rgba(24, 144, 255, 0)' },
-          ],
-        },
-      },
-      data: [], // 初始为空，动态更新
-    },
-  ],
-})
-const skillOption = {
-  tooltip: {
-    trigger: 'item',
-    formatter({ name, value }) {
-      return `${name} ${value}%`
-    },
-  },
-  legend: {
-    left: 'center',
-  },
-  series: [
-    {
-      top: '12%',
-      type: 'pie',
-      radius: ['35%', '90%'],
-      avoidLabelOverlap: true,
-      itemStyle: {
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 2,
-      },
-      label: {
-        show: false,
-        position: 'center',
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: 36,
-          fontWeight: 'bold',
-        },
-      },
-      labelLine: {
-        show: false,
-      },
-      data: [
-        { value: 38.5, name: 'Vue' },
-        { value: 37.0, name: 'JavaScript' },
-        { value: 6.5, name: 'CSS' },
-        { value: 6.2, name: 'HTML' },
-        { value: 1.8, name: 'Other' },
-      ],
-    },
-  ],
-}
+// --- 模拟数据更新 ---
+// 在实际应用中，您会通过 WebSocket 或 API 来更新这些数据
+setInterval(() => {
+  // 更新时间
+  currentTime.value = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
 
-const message = $message
-// 图片路径（假设为静态资源）
-const imageSrc = new URL('@/assets/images/test.jpg', import.meta.url).href
-// 计算图片路径
-// const imageSrc = computed(() => new URL('@/assets/images/test.jpg', import.meta.url).href);
+  // 模拟速度和位置变化
+  currentSpeed.value = Math.floor(Math.random() * 10) + 75 // 75-84 km/h
 
-// 控制模态框显示
-const isModalVisible = ref(false)
+  // 模拟检测到新的病害数据 (通常伴随图片更新)
+  defectsData.value[0].count = Math.floor(Math.random() * 4) // 钢轨: 0-3
+  defectsData.value[1].count = Math.floor(Math.random() * 8) // 扣件: 0-7
+  defectsData.value[2].count = Math.floor(Math.random() * 3) // 轨枕: 0-2
+  defectsData.value[3].count = Math.floor(Math.random() * 2) // 道床: 0-1
+}, 5000) // 每5秒更新一次示例数据
 
-// 点击图片显示详情
-function showDetail() {
-  isModalVisible.value = true
-}
-
-// 定义响应式数据
-const currentTime = ref('2025-03-05 14:30:00')
-const currentPosition = ref(45)
-const currentSpeed = ref(80)
-const captureTime = ref('2025-03-05 14:29:50')
-const capturePosition = ref(44.8)
-const captureSpeed = ref(78)
-const detectionResult = ref('裂缝')
-// const imageSrc = ref("https://example.com/image.jpg");
-const startKm = ref(0)
-const endKm = ref(100)
-const traveledDistance = ref(45)
-const totalDistance = ref(100)
-const totalDataCollected = ref(256)
-const imageCount = ref(120)
-const defectCount = ref(5)
-
-// 计算当前设备位置的百分比
-const currentLeft = computed(() => {
-  const totalDistanceKm = endKm.value - startKm.value
-  const positionRatio = (currentPosition.value - startKm.value) / totalDistanceKm
-  return positionRatio * 100 // 返回百分比
-})
-
-// 更新图表数据的函数
-function updateChart() {
-  const now = new Date()
-  const minutes = []
-  const data = []
-
-  // 生成最近 30 分钟的时间点和示例数据
-  for (let i = 29; i >= 0; i--) {
-    const time = new Date(now - i * 60 * 1000) // 向前推算 29 分钟
-    const timeStr = `${time.getHours()}:${time.getMinutes().toString().padStart(2, '0')}`
-    minutes.push(timeStr)
-    data.push(Math.floor(Math.random() * 600) + 50) // 随机生成 50-650 之间的消息数量
-  }
-
-  // 更新 trendOption
-  trendOption.value.xAxis[0].data = minutes
-  trendOption.value.series[0].data = data
-}
-
-// 组件挂载时初始化图表并设置定时更新
-onMounted(() => {
-  updateChart() // 初始加载数据
-  const interval = setInterval(updateChart, 60000) // 每分钟更新一次
-  onUnmounted(() => clearInterval(interval)) // 组件卸载时清理定时器
-})
 </script>
 
 <style scoped>
-.stats-container {
+/* 图像样式 */
+.full-image {
   width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-.stats-card {
-  flex: 1;
-  /* 每个卡片平均分配宽度 */
-  min-width: 200px;
-  /* 最小宽度 */
-  margin-right: 5px;
-  /* 卡片间距 */
-  text-align: center;
-  /* 内容居中 */
-}
-
-.stats-card:last-child {
-  margin-right: 0;
-  /* 最后一个卡片无右边距 */
-}
-
-/* 横向布局样式 */
-.card-container {
+/* 病害统计列表项样式 */
+.defect-item {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 15px;
-  /* 三个div之间的间距 */
-}
-
-/* 第一个div：信息列表 */
-.info-list {
-  flex: 1;
-  /* 自适应宽度 */
-  min-width: 200px;
-  /* 最小宽度，避免过于压缩 */
-}
-
-/* 第二个div：图像容器 */
-.image-container {
-  flex: 3;
-  /* 图像占更大比例 */
-  display: flex;
-  justify-content: center;
-  /* 图像居中 */
   align-items: center;
-  min-width: 500px;
-}
-
-.full-image {
-  max-width: 100%;
-  /* 图像自适应容器宽度 */
-  height: auto;
-}
-
-/* 第三个div：任务信息 */
-.task-info {
-  flex: 1;
-  /* 自适应宽度 */
-  min-width: 200px;
-  /* 最小宽度，避免过于压缩 */
+  width: 100%;
 }
 
 /* 设置图标基础样式 */
 .n-icon {
-  font-size: 20px;
-  /* 统一大小 */
-  margin-right: 8px;
+  font-size: 24px;
+  margin-right: 12px;
+}
+</style>
+
+<n-image :src="imageSrc" alt="实时病害图像" :preview-disabled="!imageSrc" class="full-image" />
+-->
+
+<template>
+  <AppPage show-footer>
+    <n-space vertical :size="16" class="mt-12">
+      <n-card title="实时病害图像" segmented>
+
+        <div>
+          <img :src="imageSrc" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+          <div>
+            <button @click="prevImage">上一张</button>
+            <button @click="nextImage">下一张</button>
+            <button @click="stopPlayback">暂停</button>
+            <button @click="startPlayback">播放</button>
+          </div>
+          <p>当前图片: {{ imageSrc }}</p>
+          <p>图片数量: {{ imageList.length }}</p>
+        </div>
+      </n-card>
+
+      <n-grid x-gap="16" y-gap="16" cols="1 s:1 m:2 l:2" responsive="screen">
+        <n-grid-item>
+          <n-card title="实时状态" segmented>
+            <n-space vertical :size="24">
+              <n-statistic label="当前时间" :value="currentTime">
+                <template #prefix>
+                  <n-icon class="i-mdi:clock-outline text-blue-500" />
+                </template>
+              </n-statistic>
+              <n-statistic label="当前位置 (经纬度)" :value="currentPosition">
+                <template #prefix>
+                  <n-icon class="i-mdi:map-marker-outline text-blue-500" />
+                </template>
+              </n-statistic>
+              <n-statistic label="当前速度">
+                <template #prefix>
+                  <n-icon class="i-mdi:speedometer text-blue-500" />
+                </template>
+                <template #default>
+                  {{ currentSpeed }}
+                </template>
+                <template #suffix>
+                  公里/小时
+                </template>
+              </n-statistic>
+            </n-space>
+          </n-card>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-card title="病害统计 (当前图像)" segmented>
+            <n-list hoverable clickable>
+              <n-list-item v-for="defect in defectsData" :key="defect.id">
+                <template #prefix>
+                  <n-icon :class="defect.icon" :style="{ color: defect.color }" />
+                </template>
+                <div class="defect-item">
+                  <span>{{ defect.category }}</span>
+                  <n-tag :type="defect.count > 0 ? 'error' : 'success'" round>
+                    {{ defect.count }} 个
+                  </n-tag>
+                </div>
+              </n-list-item>
+            </n-list>
+          </n-card>
+        </n-grid-item>
+      </n-grid>
+    </n-space>
+  </AppPage>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import SSEService from '@/utils/sse/sseService' // 1. 【引入】SSE服务工具
+
+// --- 响应式数据定义 ---
+
+// 实时图像的URL
+// const imageSrc = ref('') 
+// const imageSrc = "/api/images/20250630_121811390_be9103d9.jpg"
+
+// 实时状态数据
+const currentTime = ref('连接中...')
+const currentPosition = ref('N/A')
+const currentSpeed = ref(0)
+
+// 病害统计数据 (针对当前显示的图像)
+const defectsData = ref([
+  { id: 1, category: '钢轨病害', count: 0, icon: 'i-mdi:railroad-light', color: '#D9534F' },
+  { id: 2, category: '扣件病害', count: 0, icon: 'i-mdi:screw-lag', color: '#F0AD4E' },
+  { id: 3, category: '轨枕病害', count: 0, icon: 'i-mdi:view-grid-outline', color: '#5BC0DE' },
+  { id: 4, category: '道床病害', count: 0, icon: 'i-mdi:dots-grid', color: '#5CB85C' },
+])
+
+
+// --- SSE 连接与数据处理 ---
+
+// 2. 【实例化】创建SSE服务实例，指向病害图像接口
+const sseUrl = '/api/surface_images'
+const sse = new SSEService(sseUrl)
+
+/**
+ * 3. 【定义】处理从SSE接收到的每一条图像更新消息
+ * @param {object} data - 后端推送的包含图像和状态信息的对象
+ */
+// const handleImageUpdate = (data) => {
+// 假设后端推送的数据是一个JSON对象，SSEService会自动解析
+// 示例数据结构:
+// {
+//   "imageName": "20250627_092449488_65ac5cdc.jpg",
+//   "timestamp": "2025-06-27T10:30:00Z",
+//   "longitude": 116.3975,
+//   "latitude": 39.9087,
+//   "speed": 80,
+//   "defects": { "rail": 2, "fastener": 5, "sleeper": 1, "ballast": 0 }
+// }
+// console.log('Received SSE image update:', data)
+
+// let data = JSON.parse(odata) // 确保数据是JSON格式
+
+// 更新图片路径 (假设后端直接提供图片名称)
+// 注意：这里的URL路径需要与您的代理或服务器配置匹配
+// imageSrc.value = data.url
+
+// 更新实时状态
+// currentTime.value = new Date(data.timestamp).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+// currentPosition.value = `${data.longitude.toFixed(4)}°E, ${data.latitude.toFixed(4)}°N`
+// currentSpeed.value = data.speed
+
+// // 更新病害统计
+// if (data.defects) {
+//   defectsData.value[0].count = data.defects.rail || 0
+//   defectsData.value[1].count = data.defects.fastener || 0
+//   defectsData.value[2].count = data.defects.sleeper || 0
+//   defectsData.value[3].count = data.defects.ballast || 0
+// }
+// }
+
+// --- 组件生命周期 ---
+
+
+// 响应式变量
+const imageSrc = ref(''); // 当前显示的图片 URL
+const imageList = ref([]); // 图片 URL 列表
+const currentIndex = ref(-1); // 当前播放索引
+const isLooping = ref(false); // 是否循环播放
+let playbackInterval = null; // 定时器引用
+
+// 配置
+const PLAYBACK_INTERVAL = 100; // 播放间隔（100ms）
+const MAX_IMAGE_LIST_SIZE = 100; // 最大图片数量（调整为更合理的值）
+
+// 处理 SSE 图像更新
+const handleImageUpdate = (data) => {
+  console.log('Received SSE image update:', data);
+
+  // 验证数据是否包含 URL 列表
+  if (!data.urls || !Array.isArray(data.urls) || data.urls.length === 0) {
+    console.warn('Invalid or empty URL list in SSE data:', data);
+    return;
+  }
+
+  // 添加 URL 列表到 imageList 并预加载
+  data.urls.forEach(url => {
+    preloadImage(url);
+    imageList.value.push(url);
+  });
+
+  // 限制列表大小
+  if (imageList.value.length > MAX_IMAGE_LIST_SIZE) {
+    imageList.value.splice(0, imageList.value.length - MAX_IMAGE_LIST_SIZE);
+    if (currentIndex.value > imageList.value.length - 1) {
+      currentIndex.value = imageList.value.length - 1;
+    }
+  }
+
+  // 如果是首次接收，立即显示第一张并启动播放
+  if (imageList.value.length > 0 && currentIndex.value === -1) {
+    currentIndex.value = 0;
+    imageSrc.value = imageList.value[0];
+    startPlayback();
+  }
+};
+
+// 启动播放
+const startPlayback = () => {
+  if (playbackInterval) {
+    clearInterval(playbackInterval);
+  }
+
+  playbackInterval = setInterval(() => {
+    if (imageList.value.length === 0) {
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+      imageSrc.value = '';
+      console.log('No images to play');
+      return;
+    }
+
+    // 移动到下一张图片
+    currentIndex.value++;
+
+    // 检查是否播放完成
+    if (currentIndex.value >= imageList.value.length) {
+      if (isLooping.value) {
+        // 循环播放
+        currentIndex.value = 0;
+      } else {
+        // 停止播放
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+        currentIndex.value = imageList.value.length - 1; // 保持最后一张
+        console.log('Playback completed');
+        return;
+      }
+    }
+
+    imageSrc.value = imageList.value[currentIndex.value];
+    console.log('Playing image:', imageSrc.value);
+  }, PLAYBACK_INTERVAL);
+};
+
+// 停止播放
+const stopPlayback = () => {
+  if (playbackInterval) {
+    clearInterval(playbackInterval);
+    playbackInterval = null;
+    console.log('Playback stopped');
+  }
+};
+
+// 切换循环模式
+const toggleLooping = () => {
+  isLooping.value = !isLooping.value;
+  console.log('Looping:', isLooping.value);
+};
+
+// 手动切换到下一张图片
+const nextImage = () => {
+  if (imageList.value.length === 0) return;
+  currentIndex.value = (currentIndex.value + 1) % imageList.value.length;
+  imageSrc.value = imageList.value[currentIndex.value];
+};
+
+// 手动切换到上一张图片
+const prevImage = () => {
+  if (imageList.value.length === 0) return;
+  currentIndex.value = (currentIndex.value - 1 + imageList.value.length) % imageList.value.length;
+  imageSrc.value = imageList.value[currentIndex.value];
+};
+
+// 预加载图片
+const preloadImage = (url) => {
+  const img = new Image();
+  img.src = url;
+};
+
+
+onMounted(() => {
+  // 4. 【挂载】在组件挂载后，开始监听SSE事件并启动连接
+  console.warn(`Connecting to SSE endpoint: ${sseUrl}`)
+
+  // // 监听名为 "image-url" 的事件 (与后端 SseEmitter.event().name("image-url") 一致)
+  sse.addEventListener('surface_img', handleImageUpdate)
+
+  // // (可选) 监听连接成功的事件，方便调试
+  sse.addEventListener('connected', (event) => {
+    console.warn('SSE connection for images successful:', event)
+  })
+
+  sse.start()
+})
+
+onUnmounted(() => {
+  // 5. 【卸载】在组件销毁时，停止SSE服务并移除监听器，防止内存泄漏
+  console.warn('Disconnecting from SSE endpoint.')
+  sse.removeEventListener('image-url', handleImageUpdate)
+  sse.stop()
+})
+
+</script>
+
+<style scoped>
+/* 图像样式 */
+.full-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-/* 确保 SVG 颜色生效 */
-.n-icon svg {
-  fill: currentColor;
+/* 病害统计列表项样式 */
+.defect-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* 设置图标基础样式 */
+.n-icon {
+  font-size: 24px;
+  margin-right: 12px;
 }
 </style>

@@ -70,7 +70,7 @@ const chartOption = computed(() => {
             name: `轨枕 ${sleeper.uniqueId}`,
             // 3. 【Y轴分离】将Y值设为 -0.5，使其显示在标记区域下半部分
             value: [sleeper.mileage, 0],
-            id: sleeper.displayId ,
+            id: sleeper.displayId,
             // displayId: sleeper.displayId,
         }));
 
@@ -184,7 +184,7 @@ const chartOption = computed(() => {
 
 const chartHeight = computed(() => {
     const gridHeight = 64, gridSpacing = 16, markerGridHeight = 40
-    const topOffset = 5, legendHeight = 40, extraPadding = 20
+    const topOffset = 5, legendHeight = 20, extraPadding = 20
     return `${(props.parameters.length * (gridHeight + gridSpacing)) + markerGridHeight + topOffset + legendHeight + extraPadding}px`
 })
 </script>
