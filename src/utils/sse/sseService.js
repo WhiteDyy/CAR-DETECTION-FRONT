@@ -144,7 +144,7 @@ export default class SSEService {
         Authorization: 'Bearer ' + (token || ''),
         Accept: 'text/event-stream',
       },
-      heartbeatTimeout: 60000,
+      heartbeatTimeout: 120000,
     });
 
     // 1. 遍历所有已经通过 addEventListener 注册的事件类型

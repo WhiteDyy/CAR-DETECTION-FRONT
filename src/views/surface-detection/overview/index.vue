@@ -129,15 +129,10 @@ setInterval(() => {
       <n-card title="实时病害图像" segmented>
 
         <div>
-          <img :src="imageSrc" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
-          <div>
-            <button @click="prevImage">上一张</button>
-            <button @click="nextImage">下一张</button>
-            <button @click="stopPlayback">暂停</button>
-            <button @click="startPlayback">播放</button>
-          </div>
-          <p>当前图片: {{ imageSrc }}</p>
-          <p>图片数量: {{ imageList.length }}</p>
+          <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+          
+          <p>当前图片: {{ currentImage }}</p>
+          <!-- <p>图片数量: {{ imageList.length }}</p> -->
         </div>
       </n-card>
 
@@ -260,123 +255,78 @@ const sse = new SSEService(sseUrl)
 // }
 
 // --- 组件生命周期 ---
+// 只需要维护当前图片URL
+// const imageSrc = ref('')
+// const lastUpdated = ref('')
+// const isPlaying = ref(false)
 
+// // 处理SSE消息 - 简化为直接更新当前图片
+// const handleImageUpdate = (data) => {
+//   if (data.url) {
+//     imageSrc.value = data.url
+//     lastUpdated.value = new Date().toLocaleTimeString()
+//     console.log('Updated image:', data.url)
+//   }
+// }
 
-// 响应式变量
-const imageSrc = ref(''); // 当前显示的图片 URL
-const imageList = ref([]); // 图片 URL 列表
-const currentIndex = ref(-1); // 当前播放索引
-const isLooping = ref(false); // 是否循环播放
-let playbackInterval = null; // 定时器引用
 
 // 配置
-const PLAYBACK_INTERVAL = 100; // 播放间隔（100ms）
-const MAX_IMAGE_LIST_SIZE = 100; // 最大图片数量（调整为更合理的值）
+const TARGET_FPS = 5 // 目标帧率（5帧/秒）
+const BUFFER_SIZE = 3 // 缓冲队列长度
 
-// 处理 SSE 图像更新
-const handleImageUpdate = (data) => {
-  console.log('Received SSE image update:', data);
+// 状态
+const imageQueue = ref([]) // 图片缓冲队列
+const currentImage = ref('')
+const isPlaying = ref(false)
+let frameInterval = 1000 / TARGET_FPS
+let playTimer = null
 
-  // 验证数据是否包含 URL 列表
-  if (!data.urls || !Array.isArray(data.urls) || data.urls.length === 0) {
-    console.warn('Invalid or empty URL list in SSE data:', data);
-    return;
-  }
-
-  // 添加 URL 列表到 imageList 并预加载
-  data.urls.forEach(url => {
-    preloadImage(url);
-    imageList.value.push(url);
-  });
-
-  // 限制列表大小
-  if (imageList.value.length > MAX_IMAGE_LIST_SIZE) {
-    imageList.value.splice(0, imageList.value.length - MAX_IMAGE_LIST_SIZE);
-    if (currentIndex.value > imageList.value.length - 1) {
-      currentIndex.value = imageList.value.length - 1;
+// SSE消息处理
+const handleImageUpdate  = (data) => {
+  if (data.url) {
+    // 将新图片加入队列（自动限制队列长度）
+    if (imageQueue.value.length >= BUFFER_SIZE) {
+      imageQueue.value.shift() // 移除最旧的图片
+    }
+    imageQueue.value.push(data.url)
+    
+    // 如果当前没有播放且队列有数据，开始播放
+    if (!isPlaying.value && imageQueue.value.length > 0) {
+      startPlayback()
     }
   }
+}
 
-  // 如果是首次接收，立即显示第一张并启动播放
-  if (imageList.value.length > 0 && currentIndex.value === -1) {
-    currentIndex.value = 0;
-    imageSrc.value = imageList.value[0];
-    startPlayback();
-  }
-};
-
-// 启动播放
+// 开始播放
 const startPlayback = () => {
-  if (playbackInterval) {
-    clearInterval(playbackInterval);
+  if (isPlaying.value) return
+  
+  isPlaying.value = true
+  playNextFrame()
+}
+
+// 播放下一帧
+const playNextFrame = () => {
+  if (imageQueue.value.length === 0) {
+    isPlaying.value = false
+    return
   }
 
-  playbackInterval = setInterval(() => {
-    if (imageList.value.length === 0) {
-      clearInterval(playbackInterval);
-      playbackInterval = null;
-      imageSrc.value = '';
-      console.log('No images to play');
-      return;
-    }
-
-    // 移动到下一张图片
-    currentIndex.value++;
-
-    // 检查是否播放完成
-    if (currentIndex.value >= imageList.value.length) {
-      if (isLooping.value) {
-        // 循环播放
-        currentIndex.value = 0;
-      } else {
-        // 停止播放
-        clearInterval(playbackInterval);
-        playbackInterval = null;
-        currentIndex.value = imageList.value.length - 1; // 保持最后一张
-        console.log('Playback completed');
-        return;
-      }
-    }
-
-    imageSrc.value = imageList.value[currentIndex.value];
-    console.log('Playing image:', imageSrc.value);
-  }, PLAYBACK_INTERVAL);
-};
+  currentImage.value = imageQueue.value.shift() // 从队列取出图片
+  
+  // 按目标帧率继续播放
+  playTimer = setTimeout(() => {
+    playNextFrame()
+  }, frameInterval)
+}
 
 // 停止播放
 const stopPlayback = () => {
-  if (playbackInterval) {
-    clearInterval(playbackInterval);
-    playbackInterval = null;
-    console.log('Playback stopped');
-  }
-};
+  clearTimeout(playTimer)
+  isPlaying.value = false
+}
 
-// 切换循环模式
-const toggleLooping = () => {
-  isLooping.value = !isLooping.value;
-  console.log('Looping:', isLooping.value);
-};
 
-// 手动切换到下一张图片
-const nextImage = () => {
-  if (imageList.value.length === 0) return;
-  currentIndex.value = (currentIndex.value + 1) % imageList.value.length;
-  imageSrc.value = imageList.value[currentIndex.value];
-};
-
-// 手动切换到上一张图片
-const prevImage = () => {
-  if (imageList.value.length === 0) return;
-  currentIndex.value = (currentIndex.value - 1 + imageList.value.length) % imageList.value.length;
-  imageSrc.value = imageList.value[currentIndex.value];
-};
-
-// 预加载图片
-const preloadImage = (url) => {
-  const img = new Image();
-  img.src = url;
-};
 
 
 onMounted(() => {
@@ -396,6 +346,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   // 5. 【卸载】在组件销毁时，停止SSE服务并移除监听器，防止内存泄漏
+  stopPlayback()
   console.warn('Disconnecting from SSE endpoint.')
   sse.removeEventListener('image-url', handleImageUpdate)
   sse.stop()
