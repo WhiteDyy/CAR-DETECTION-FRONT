@@ -12,6 +12,7 @@ import {
   TitleComponent,
   TooltipComponent,
   MarkLineComponent,
+  DataZoomComponent 
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { UniversalTransition } from 'echarts/features';
@@ -33,6 +34,7 @@ use([
   LegendComponent,
   TitleComponent,
   MarkLineComponent,
+  DataZoomComponent,
   LineChart,
   CanvasRenderer,
   UniversalTransition,

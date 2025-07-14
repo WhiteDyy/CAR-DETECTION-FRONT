@@ -17,6 +17,13 @@
                                 <span class="info-label">行别:</span>
                                 <n-tag type="warning" size="medium">{{ trackDirection }}</n-tag>
                             </div>
+
+                            <!-- 添加结束作业按钮 -->
+                            <div class="action-item">
+                                <n-button type="error" size="medium" :loading="endingJob" @click="handleEndJob">
+                                    结束作业
+                                </n-button>
+                            </div>
                         </div>
                     </n-card>
                 </div>
@@ -49,7 +56,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import TrendChart from './trendChart.vue'
 import SSEService from '@/utils/sse/sseService';
-
+import api from './api'
+import { useTaskStore } from '@/store'
 // tab切换状态
 const currentTab = ref('main')
 
@@ -175,6 +183,37 @@ const handleSseMessage = (point) => {
 
     // 调用已有的函数来更新图表状态，这里什么都不用改
     updateChartData(newData, newTag, newSleeper);
+};
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const endingJob = ref(false)
+const handleEndJob = async () => {
+    const taskStore = useTaskStore()
+
+    endingJob.value = true;
+    try {
+        // 1. 从Pinia获取当前任务
+        const currentTask = taskStore.getCurrentTask()
+        if (!currentTask) {
+            throw new Error('没有找到进行中的任务')
+        }
+        // 调用结束作业API
+        const response = await api.stopCurrentJob(currentTask);
+        if (response.code !== 0) {
+            throw new Error('结束作业失败: ' + response.message);
+        } else {
+            // 2. 清除当前任务状态
+            taskStore.clearCurrentTask();
+            $message.success('作业已成功结束');
+            router.push('/taskmanage/task-list')
+        }
+
+        // 这里可以添加结束后的其他逻辑，如刷新数据等
+    } catch (error) {
+        $message.error('结束作业失败: ' + error.message);
+    } finally {
+        endingJob.value = false;
+    }
 };
 
 

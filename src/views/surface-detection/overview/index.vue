@@ -1,138 +1,17 @@
-<!-- <template>
-  <AppPage show-footer>
-    <n-space vertical :size="16" class="mt-12">
-      <n-card title="实时病害图像" segmented>
-        <n-image :src="imageSrc" alt="实时病害图像" preview class="full-image" />
-      </n-card>
-
-      <n-grid x-gap="16" y-gap="16" cols="1 s:1 m:2 l:2" responsive="screen">
-        <n-grid-item>
-          <n-card title="实时状态" segmented>
-            <n-space vertical :size="24">
-              <n-statistic label="当前时间" :value="currentTime">
-                <template #prefix>
-                  <n-icon class="i-mdi:clock-outline text-blue-500" />
-                </template>
-              </n-statistic>
-              <n-statistic label="当前位置 (经纬度)" :value="currentPosition">
-                <template #prefix>
-                  <n-icon class="i-mdi:map-marker-outline text-blue-500" />
-                </template>
-              </n-statistic>
-              <n-statistic label="当前速度">
-                <template #prefix>
-                  <n-icon class="i-mdi:speedometer text-blue-500" />
-                </template>
-                <template #default>
-                  {{ currentSpeed }}
-                </template>
-                <template #suffix>
-                  公里/小时
-                </template>
-              </n-statistic>
-            </n-space>
-          </n-card>
-        </n-grid-item>
-
-        <n-grid-item>
-          <n-card title="病害统计 (当前图像)" segmented>
-            <n-list hoverable clickable>
-              <n-list-item v-for="defect in defectsData" :key="defect.id">
-                <template #prefix>
-                  <n-icon :class="defect.icon" :style="{ color: defect.color }" />
-                </template>
-                <div class="defect-item">
-                  <span>{{ defect.category }}</span>
-                  <n-tag :type="defect.count > 0 ? 'error' : 'success'" round>
-                    {{ defect.count }} 个
-                  </n-tag>
-                </div>
-              </n-list-item>
-            </n-list>
-          </n-card>
-        </n-grid-item>
-      </n-grid>
-    </n-space>
-  </AppPage>
-</template>
-
-<script setup>
-import { ref } from 'vue'
-
-// 图片路径（请确保路径正确）
-// const imageSrc = new URL('@/assets/images/test.jpg', import.meta.url).href
-// http://localhost:8089/images/
-const imageSrc = "/api/images/20250627_092449488_65ac5cdc.jpg"
-// --- 响应式数据定义 ---
-
-// 实时状态数据
-const currentTime = ref('2025-06-27 10:30:00')
-const currentPosition = ref('116.3975°E, 39.9087°N') // 经纬度格式
-const currentSpeed = ref(80)
-
-// 病害统计数据 (针对当前显示的图像)
-const defectsData = ref([
-  { id: 1, category: '钢轨病害', count: 2, icon: 'i-mdi:railroad-light', color: '#D9534F' },
-  { id: 2, category: '扣件病害', count: 5, icon: 'i-mdi:screw-lag', color: '#F0AD4E' },
-  { id: 3, category: '轨枕病害', count: 1, icon: 'i-mdi:view-grid-outline', color: '#5BC0DE' },
-  { id: 4, category: '道床病害', count: 0, icon: 'i-mdi:dots-grid', color: '#5CB85C' },
-])
-
-// --- 模拟数据更新 ---
-// 在实际应用中，您会通过 WebSocket 或 API 来更新这些数据
-setInterval(() => {
-  // 更新时间
-  currentTime.value = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-
-  // 模拟速度和位置变化
-  currentSpeed.value = Math.floor(Math.random() * 10) + 75 // 75-84 km/h
-
-  // 模拟检测到新的病害数据 (通常伴随图片更新)
-  defectsData.value[0].count = Math.floor(Math.random() * 4) // 钢轨: 0-3
-  defectsData.value[1].count = Math.floor(Math.random() * 8) // 扣件: 0-7
-  defectsData.value[2].count = Math.floor(Math.random() * 3) // 轨枕: 0-2
-  defectsData.value[3].count = Math.floor(Math.random() * 2) // 道床: 0-1
-}, 5000) // 每5秒更新一次示例数据
-
-</script>
-
-<style scoped>
-/* 图像样式 */
-.full-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-/* 病害统计列表项样式 */
-.defect-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-/* 设置图标基础样式 */
-.n-icon {
-  font-size: 24px;
-  margin-right: 12px;
-}
-</style>
-
-<n-image :src="imageSrc" alt="实时病害图像" :preview-disabled="!imageSrc" class="full-image" />
--->
-
 <template>
   <AppPage show-footer>
     <n-space vertical :size="16" class="mt-12">
       <n-card title="实时病害图像" segmented>
-
         <div>
-          <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
-          
-          <p>当前图片: {{ currentImage }}</p>
-          <!-- <p>图片数量: {{ imageList.length }}</p> -->
+          <template v-if="currentImage">
+            <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+            <p>当前图片: {{ currentImage }}</p>
+          </template>
+          <template v-else>
+            <div class="image-placeholder">
+              <p>当前暂无图像</p>
+            </div>
+          </template>
         </div>
       </n-card>
 
@@ -282,14 +161,14 @@ let frameInterval = 1000 / TARGET_FPS
 let playTimer = null
 
 // SSE消息处理
-const handleImageUpdate  = (data) => {
+const handleImageUpdate = (data) => {
   if (data.url) {
     // 将新图片加入队列（自动限制队列长度）
     if (imageQueue.value.length >= BUFFER_SIZE) {
       imageQueue.value.shift() // 移除最旧的图片
     }
     imageQueue.value.push(data.url)
-    
+
     // 如果当前没有播放且队列有数据，开始播放
     if (!isPlaying.value && imageQueue.value.length > 0) {
       startPlayback()
@@ -300,7 +179,7 @@ const handleImageUpdate  = (data) => {
 // 开始播放
 const startPlayback = () => {
   if (isPlaying.value) return
-  
+
   isPlaying.value = true
   playNextFrame()
 }
@@ -313,7 +192,7 @@ const playNextFrame = () => {
   }
 
   currentImage.value = imageQueue.value.shift() // 从队列取出图片
-  
+
   // 按目标帧率继续播放
   playTimer = setTimeout(() => {
     playNextFrame()
@@ -375,5 +254,14 @@ onUnmounted(() => {
 .n-icon {
   font-size: 24px;
   margin-right: 12px;
+}
+
+.image-placeholder {
+  border: 1px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  background-color: #f5f5f5;
+  border-radius: 4px;
 }
 </style>

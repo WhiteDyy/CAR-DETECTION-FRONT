@@ -113,10 +113,15 @@ const sse = new SSEService(sseUrl);
 const handleMessage = (data) => {
   errorMessage.value = '';
 
+   console.log("查看传感器数据:", data);
+
+   
   // 宽松的数据验证，允许部分字段为字符串并转换
   if (!data || typeof data.sequence !== 'number') {
     return;
   }
+
+ 
 
   // 类型转换
   const parsedData = {
@@ -171,14 +176,14 @@ const resetStateOnReconnect = () => {
 
 onMounted(() => {
   console.warn('Mounting, adding SSE listener');
-  sse.addEventListener('sensorData', handleMessage);
+  sse.addEventListener('sensor-data', handleMessage);
   sse.addEventListener('reconnect', resetStateOnReconnect);
   sse.start();
 });
 
 onUnmounted(() => {
   console.warn('Unmounting, removing SSE listener');
-  sse.removeEventListener('sensorData', handleMessage);
+  sse.removeEventListener('sensor-data', handleMessage);
   sse.removeEventListener('reconnect', resetStateOnReconnect);
   sse.stop();
 });
