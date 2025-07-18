@@ -1,10 +1,5 @@
 <template>
-  <i
-    id="toggleTheme"
-    class="mr-16 cursor-pointer"
-    :class="isDark ? 'i-fe:moon' : 'i-fe:sun'"
-    @click="toggleDark"
-  />
+  <i id="toggleTheme" class="mr-16 cursor-pointer" :class="isDark ? 'i-fe:moon' : 'i-fe:sun'" @click="toggleDark" />
 </template>
 
 <script setup>
@@ -43,3 +38,29 @@ async function toggleDark({ clientX, clientY }) {
   )
 }
 </script>
+<style>
+/* 默认（亮色）模式 */
+body {
+  background-color: #ffffff;
+  /* 亮色背景 */
+  color: #222222;
+  /* 亮色文字 */
+  transition: background-color 0.3s ease;
+}
+
+/* ✨ 夜间模式的样式（使用渐变背景） */
+html.dark body {
+  /* 使用 background 属性替代 background-color。
+    linear-gradient() 用于创建线性渐变。
+    'to bottom' 表示渐变方向从上到下。
+    #314648 是起始颜色。
+    #080F13 是结束颜色。
+  */
+  background: linear-gradient(to bottom, #314648, #080F13);
+  color: #fff;
+  /* 夜间模式文字色保持不变 */
+
+  /* 注意：CSS transition 无法平滑地为渐变背景添加动画，
+     但您的代码中使用了 View Transition API，它会提供更高级的切换动画。*/
+}
+</style>

@@ -1,24 +1,7 @@
-<!--------------------------------
- - @Author: Ronnie Zhang
- - @LastEditor: Ronnie Zhang
- - @LastEditTime: 2023/12/16 18:50:35
- - @Email: zclzone@outlook.com
- - Copyright © 2023 Ronnie Zhang(大脸怪) | https://isme.top
- --------------------------------->
-
 <template>
-  <n-menu
-    ref="menu"
-    class="side-menu"
-    accordion
-    :indent="18"
-    :collapsed-icon-size="22"
-    :collapsed-width="64"
-    :collapsed="appStore.collapsed"
-    :options="permissionStore.menus"
-    :value="activeKey"
-    @update:value="handleMenuSelect"
-  />
+  <n-menu ref="menu" class="side-menu" accordion :indent="18" :collapsed-icon-size="22" :collapsed-width="64"
+    :collapsed="appStore.collapsed" :options="permissionStore.menus" :value="activeKey"
+    @update:value="handleMenuSelect" />
 </template>
 
 <script setup>
@@ -66,6 +49,7 @@ function handleMenuSelect(key, item) {
       left: 8px;
       right: 8px;
     }
+
     &.n-menu-item-content--selected::before {
       border-left: 4px solid rgb(var(--primary-color));
     }

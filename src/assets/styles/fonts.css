@@ -1,0 +1,20 @@
+/* src/assets/styles/fonts.css */
+
+
+
+/* inter-semi-bold - 600 */
+@font-face {
+  font-display: swap; 
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../Inter-VariableFont_opsz,wght.woff2') format('woff2'); 
+
+  @font-face {
+  font-display: swap; 
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../PlusJakartaSans-Italic-VariableFont_wght.woff2') format('woff2'); 
+}
+}
