@@ -2,45 +2,67 @@
   <CommonPage>
     <div class="dashboard">
       <n-alert v-if="errorMessage" type="error" :title="errorMessage" />
-      <h1>传感器实时仪表盘</h1>
-      <n-grid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="2" :y-gap="2">
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence" title="Gyro 1" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence" title="Gyro 2" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="dipmeter" color="rgb(75, 192, 192)" :x-axis-data="xAxisSequence" title="Dipmeter" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence" title="Accel X" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence" title="Accel Y" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence" title="Accel Z" />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card hoverable class="chart-card">
-            <LineChart :data="chartData" parameter="cnt" color="rgb(201, 203, 207)" :x-axis-data="xAxisSequence" title="Encoder" />
-          </n-card>
-        </n-gi>
-      </n-grid>
-      <div class="table-container">
+      <div class="charts-container">
+        <n-grid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="2" :y-gap="2">
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence"
+                title="点头陀螺" xAxisName="编码器值" yAxisName="幅度/s" />
+            </n-card>
+          </n-gi>
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence"
+                title="摇头陀螺" xAxisName="编码器值" yAxisName="幅度/s" />
+            </n-card>
+          </n-gi>
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="dipmeter" color="rgb(75, 192, 192)" :x-axis-data="xAxisSequence"
+                title="倾角仪" xAxisName="编码器值" yAxisName="度" />
+            </n-card>
+          </n-gi>
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence"
+                title="横向加速度" xAxisName="编码器值" yAxisName="m/s&sup2" />
+            </n-card>
+          </n-gi>
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence"
+                title="横移加速度" xAxisName="编码器值" yAxisName="m/s&sup2" />
+            </n-card>
+          </n-gi>
+          <n-gi>
+            <n-card class="chart-card">
+              <LineChart :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence"
+                title="沉浮加速度" xAxisName="编码器值" yAxisName="m/s&#178" />
+            </n-card>
+          </n-gi>
+        </n-grid>
+      </div>
+
+      <div class="device-status-grid">
+        <div v-for="(device, index) in deviceStatusList" :key="index" class="device-card">
+          <div class="device-header">
+            <div class="device-info">
+              <div class="device-title">{{ device.name }}</div>
+              <div class="device-sub ">
+                <span class="mt-[15px]">{{ device.label }}</span>
+                <!-- 状态切换时更新 label -->
+                <n-switch v-if="device.type != 'status'" v-model:value="device.online" :style="{
+                  backgroundColor: device.online ? 'rgb(206, 23, 47)' : 'rgb(0, 0, 0)',
+                  borderRadius: '16px',
+                  transition: 'background-color 0.3s',
+                }" @update:value="updateLabel(device)" class="device-switch" />
+              </div>
+            </div>
+            <img :src="device.icon" class="device-icon" />
+          </div>
+        </div>
+      </div>
+      <!-- <div class="table-container">
         <h2>最新数据 (最近 5 包)</h2>
         <table>
           <thead>
@@ -70,7 +92,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
+
     </div>
   </CommonPage>
 </template>
@@ -103,27 +126,45 @@ const updateCharts = debounce(() => {
   chartData.cnt = [...chartData.cnt];
   xAxisSequence.value = [...xAxisSequence.value];
   latestData.value = [...latestData.value];
-}, 200); // 增加防抖时间
+}, 200);
 
-
+const deviceStatusList = ref([
+  { name: '编码器1', label: '速度值：', icon: '/encoder.png', type: 'status', online: false },
+  { name: '编码器2', label: '速度值：', icon: '/encoder.png', type: 'status', online: true },
+  { name: '激光传感器1', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '激光传感器2', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '激光传感器3', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '激光传感器4', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '激光传感器5', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '激光传感器6', label: '离线状态', icon: '/laser.png', online: false },
+  { name: '电子标签读卡器', label: '在线状态', icon: '/rfid.png', online: true },
+  { name: '轨枕计数传感器1', label: '在线状态', icon: '/track.png', online: true },
+  { name: '轨枕计数传感器2', label: '在线状态', icon: '/track.png', online: true },
+  { name: '线阵相机1', label: '在线状态', icon: '/camera.png', online: true },
+  { name: '线阵相机2', label: '在线状态', icon: '/camera.png', online: true },
+  { name: '线阵相机3', label: '在线状态', icon: '/camera.png', online: true },
+  { name: '线阵相机4', label: '在线状态', icon: '/camera.png', online: true },
+  { name: '线阵相机5', label: '在线状态', icon: '/camera.png', online: true },
+  { name: '相机光源1', label: '离线状态', icon: '/light.png', online: false },
+  { name: '相机光源2', label: '离线状态', icon: '/light.png', online: false },
+  { name: '相机光源3', label: '离线状态', icon: '/light.png', online: false },
+  { name: '相机光源4', label: '离线状态', icon: '/light.png', online: false },
+  { name: '相机光源5', label: '离线状态', icon: '/light.png', online: false },
+  // 可继续补充更多
+]);
+const updateLabel = (device) => {
+  // 根据在线状态更新 label
+  device.label = device.online ? '在线状态' : '离线状态';
+};
 const sseUrl = '/api/sensor';
 const sse = new SSEService(sseUrl);
 
-
 const handleMessage = (data) => {
   errorMessage.value = '';
-
-   console.log("查看传感器数据:", data);
-
-   
-  // 宽松的数据验证，允许部分字段为字符串并转换
+  console.log("查看传感器数据:", data);
   if (!data || typeof data.sequence !== 'number') {
     return;
   }
-
- 
-
-  // 类型转换
   const parsedData = {
     sequence: data.sequence,
     ga: Number(data.ga) || 0,
@@ -135,9 +176,6 @@ const handleMessage = (data) => {
     grob: Number(data.grob) || 0,
     startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
   };
-
- 
-
   chartData.groa.push(parsedData.groa);
   chartData.grob.push(parsedData.grob);
   chartData.dipmeter.push(parsedData.dipmeter);
@@ -146,7 +184,6 @@ const handleMessage = (data) => {
   chartData.gc.push(parsedData.gc);
   chartData.cnt.push(parsedData.cnt);
   sequence.value.push(parsedData.sequence);
-
   if (chartData.groa.length > maxPoints) {
     chartData.groa.shift();
     chartData.grob.shift();
@@ -157,21 +194,16 @@ const handleMessage = (data) => {
     chartData.cnt.shift();
     sequence.value.shift();
   }
-
   latestData.value.push(parsedData);
   if (latestData.value.length > 5) {
     latestData.value = latestData.value.slice(-5);
   }
-
   console.warn('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length);
   updateCharts();
 };
 
 const resetStateOnReconnect = () => {
-  
   latestData.value = [];
-  
-  // 保留 chartData 和 sequence，不清空折线图数据
 };
 
 onMounted(() => {
@@ -191,29 +223,112 @@ onUnmounted(() => {
 
 <style scoped>
 .dashboard {
-  padding: 20px;
+  padding: 10px;
   margin: auto;
+  background-color: rgb(19, 21, 27);
 }
+
+.charts-container {
+  border: 1px solid #ffffff;
+  /* 白色边框包裹所有折线图 */
+  padding: 10px;
+  border-radius: 16px;
+  /* 圆角边框 */
+}
+
 .chart-card {
   height: 300px;
+  background-color: rgb(19, 27, 27);
+  border: none;
+  /* 移除单个卡片的边框 */
 }
+
 .table-container {
-  margin-top: 30px;
+  margin-top: 10px;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
 }
-th, td {
+
+th,
+td {
   padding: 10px;
   text-align: center;
   border: 1px solid #ddd;
 }
+
 th {
   background: #4caf50;
   color: white;
 }
+
 tr:nth-child(even) {
   background: #f2f2f2;
+}
+
+.device-status-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* 每行 7 个卡片 */
+  gap: 16px;
+  padding: 20px;
+  margin-top: 20px;
+  background-color: rgb(32, 44, 51);
+  border-radius: 14px;
+  border: 1px solid #fffefd;
+}
+
+.device-card {
+  background: rgb(47, 99, 98);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.993);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.device-title {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.device-sub {
+  font-size: 13px;
+  color: #d0d0d0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.device-switch {
+  margin-left: 60px;
+  /* 确保开关和label之间的距离 */
+  border-radius: 16px;
+  /* 圆角 */
+  margin-top: 15px;
+}
+
+.device-icon {
+  width: 28px;
+  height: 28px;
+  margin-top: -40px;
 }
 </style>

@@ -26,8 +26,6 @@ const props = defineProps({
   color: { type: String, required: true },
   xAxisData: { type: Array, default: () => [] },
   title: { type: String, default: '折线图' },
-  xAxisName: { type: String, default: 'X Axis' },
-  yAxisName: { type: String, default: 'Y Axis' },
 });
 
 use([
@@ -42,13 +40,16 @@ use([
   UniversalTransition,
 ]);
 
-const maxDisplayPoints = 100;
+// Downsample data if too large
+const maxDisplayPoints = 100; // Maximum points to display
 const chartData = computed(() => {
   const rawData = props.data[props.parameter] || [];
   const xAxis = props.xAxisData || [];
   if (rawData.length <= maxDisplayPoints) {
     return { seriesData: rawData, xAxisData: xAxis };
   }
+
+  // Simple downsampling: take every nth point
   const step = Math.ceil(rawData.length / maxDisplayPoints);
   const downsampledData = [];
   const downsampledXAxis = [];
@@ -67,7 +68,6 @@ const chartOption = computed(() => ({
     textStyle: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: '#FFFFFF', // 标题字体改为白色
     },
   },
   tooltip: {
@@ -75,8 +75,8 @@ const chartOption = computed(() => ({
     confine: true,
   },
   grid: {
-    left: '1%',
-    right: '15%',
+    left: '5%',
+    right: '5%',
     top: '15%',
     bottom: '10%',
     containLabel: true,
@@ -84,47 +84,14 @@ const chartOption = computed(() => ({
   xAxis: {
     type: 'category',
     data: chartData.value.xAxisData,
-    name: props.xAxisName,
-    nameLocation: 'end',
-    nameGap: 20, // 增加间距以确保单位完全显示
-    nameTextStyle: {
-      fontSize: 12,
-      color: '#FFFFFF', // X 轴单位字体改为白色
-    },
-    axisLine: {
-      show: true,
-      lineStyle: {
-        color: '#666666',
-        width: 2,
-        type: 'solid',
-      },
-      symbol: ['none', 'arrow'],
-      symbolOffset: [0, 10],
-    },
-    axisTick: { show: true },
+    axisLine: { show: true },
+    axisTick: { show: false },
     splitLine: {
       show: false,
     },
   },
   yAxis: {
     type: 'value',
-    name: props.yAxisName,
-    nameLocation: 'end',
-    nameGap: 10,
-    nameTextStyle: {
-      fontSize: 12,
-      color: '#FFFFFF', // Y 轴单位字体改为白色
-    },
-    axisLine: {
-      show: true,
-      lineStyle: {
-        color: '#666666',
-        width: 2,
-        type: 'solid',
-      },
-      symbol: ['none', 'arrow'],
-      symbolOffset: [0, 10],
-    },
     splitLine: {
       show: false,
     },
@@ -140,9 +107,14 @@ const chartOption = computed(() => ({
     large: true,
     progressive: 500,
     progressiveThreshold: 100,
-    showSymbol: false,
+    showSymbol: false, // 优化大数据量
   }],
-  animation: false,
+  dataZoom: [{ // 支持缩放
+    type: 'slider',
+    start: Math.max(0, (chartData.value.seriesData.length - 100) / chartData.value.seriesData.length * 100),
+    end: 100,
+  }],
+  animation: false, // 提高渲染性能
 }));
 
 const onChartRendered = () => {
