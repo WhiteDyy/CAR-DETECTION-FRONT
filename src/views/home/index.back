@@ -1,0 +1,209 @@
+<template>
+  <div class="page-wrapper">
+    <n-grid :cols="24" :x-gap="16" class="full-height-grid">
+
+      <n-gi :span="16">
+        <div class="block-a">
+          <div class="block-a1">
+            <img :src="highfive" alt="Logo" class="logo-image" />
+            <p class="logo-text">轨道智能管控</p>
+          </div>
+
+          <div class="block-a2">
+            <n-grid :cols="2" :x-gap="16" :y-gap="16" class="card-grid">
+              <n-gi>
+                <div class="card-container" :class="{ 'is-selected': selectedCard === 1 }" @click="selectedCard = 1">
+                  <img :src="deviceSrc" alt="传感器状态" class="card-image" />
+                </div>
+              </n-gi>
+              <n-gi>
+                <div class="card-container" :class="{ 'is-selected': selectedCard === 2 }" @click="selectedCard = 2">
+                  <img :src="chartsSrc" alt="任务创建与管理" class="card-image" />
+                </div>
+              </n-gi>
+              <n-gi>
+                <div class="card-container" :class="{ 'is-selected': selectedCard === 3 }" @click="selectedCard = 3">
+                  <img :src="trainSrc" alt="轨道检测" class="card-image" />
+                </div>
+              </n-gi>
+              <n-gi>
+                <div class="card-container" :class="{ 'is-selected': selectedCard === 4 }" @click="selectedCard = 4">
+                  <img :src="tabletSrc" alt="结果报表查询" class="card-image" />
+                </div>
+              </n-gi>
+            </n-grid>
+          </div>
+        </div>
+      </n-gi>
+
+      <n-gi :span="8">
+        <div class="block-b">
+          <div class="block-b1">
+            <p>B1: 用户头像 & 昵称</p>
+          </div>
+
+          <div class="block-b2">
+            <p>B2: 用户信息</p>
+          </div>
+
+          <div class="block-b3">
+            <p>B3: 管理信息</p>
+          </div>
+        </div>
+      </n-gi>
+    </n-grid>
+  </div>
+</template>
+
+<script setup>
+// 你的脚本保持不变
+import AppCard from '@/components/common/AppCard.vue';
+import { NGrid, NGi } from 'naive-ui';
+
+
+// --- 图片资源 ---
+const highfive = new URL('@/assets/images/home/highfive.png', import.meta.url).href;
+const deviceSrc = new URL('@/assets/images/home/device.png', import.meta.url).href;
+const chartsSrc = new URL('@/assets/images/home/charts.png', import.meta.url).href;
+const trainSrc = new URL('@/assets/images/home/train.png', import.meta.url).href;
+const tabletSrc = new URL('@/assets/images/home/tablet.png', import.meta.url).href;
+const faviconSrc = new URL('@/assets/images/home/favicon.png', import.meta.url).href;
+
+
+
+</script>
+
+<style scoped>
+/* 页面基础包裹层 */
+.page-wrapper {
+  width: 100%;
+  height: 100vh;
+  padding: 16px;
+  background-color: #101418;
+  box-sizing: border-box;
+}
+
+/* 让栅格系统撑满父容器高度 */
+.full-height-grid {
+  height: 100%;
+}
+
+/* ---- A 区 (左侧) ---- */
+.block-a {
+  display: grid;
+  grid-template-rows: 1fr 10fr;
+  height: 100%;
+  gap: 16px;
+}
+
+.block-a1 {
+  background-color: #e67e22;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 24px;
+}
+
+.logo-image {
+  height: 48px;
+  width: 48px;
+  margin-right: 16px;
+}
+
+.logo-text {
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+}
+
+/* --- 核心修复区域 --- */
+
+.block-a2 {
+  /* 1. 移除 display:flex 和 flex-direction，让它成为一个简单的块容器 */
+  background-color: transparent;
+  border-radius: 8px;
+  min-height: 0;
+  /* 保持此项，防止内容溢出 */
+}
+
+.card-grid {
+  /* 2. 移除 flex-grow:1，改为 height: 100% 直接继承父级高度 */
+  height: 100%;
+  /* 3. 为确保稳定，显式声明 display:grid */
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+}
+
+/* --- 修复结束 --- */
+
+
+/* 卡片包裹容器 */
+.card-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+
+/* 悬停效果 */
+.card-container:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* 选中效果 */
+.card-container.is-selected {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+  outline: 3px solid #3b82f6;
+  outline-offset: 4px;
+}
+
+/* ---- B 区 (右侧) ---- */
+.block-b {
+  display: grid;
+  grid-template-rows: 100px 150px 1fr;
+  height: 100%;
+  gap: 16px;
+}
+
+.block-b1,
+.block-b2,
+.block-b3 {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-b1 {
+  background-color: #c0392b;
+}
+
+.block-b2 {
+  background-color: #8e44ad;
+}
+
+.block-b3 {
+  background-color: #27ae60;
+}
+
+/* 通用文字样式 */
+p:not(.logo-text) {
+  color: white;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+</style>

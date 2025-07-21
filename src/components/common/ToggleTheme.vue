@@ -63,4 +63,10 @@ html.dark body {
   /* 注意：CSS transition 无法平滑地为渐变背景添加动画，
      但您的代码中使用了 View Transition API，它会提供更高级的切换动画。*/
 }
+
+#app>div>div.wh-full.flex>article>div {
+  background-color: transparent;
+  /* 保持文章背景透明 */
+  background: linear-gradient(to right, #314648, #080F13);
+}
 </style>
