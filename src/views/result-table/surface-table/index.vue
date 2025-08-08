@@ -17,45 +17,6 @@
             </n-dropdown>
         </div>
 
-        <!-- 第一个表单：基本信息（5列布局，单独绑定） -->
-        <!-- <n-form v-if="showSearchForm" :model="basicInfoForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-card title="基本信息筛选">
-                <n-grid :cols="5" :x-gap="12" :y-gap="8">
-                    <n-form-item-gi label="起始里程">
-                        <n-input v-model:value="basicInfoForm.startMileage" placeholder="请输入起始里程" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="终止里程">
-                        <n-input v-model:value="basicInfoForm.endMileage" placeholder="请输入终止里程" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="线路名称">
-                        <n-input v-model:value="basicInfoForm.lineName" placeholder="请输入线路名称" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="上下行">
-                        <n-select v-model:value="basicInfoForm.direction" :options="directionOptions" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="检测人员">
-                        <n-input v-model:value="basicInfoForm.inspector" placeholder="请输入检测人员" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="检测时间">
-                        <n-date-picker v-model:value="basicInfoForm.inspectionTimeRange" type="daterange" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi label="超限处理情况">
-                        <n-input v-model:value="basicInfoForm.excessHandling" placeholder="请输入超限处理情况" clearable />
-                    </n-form-item-gi>
-                    <n-form-item-gi>
-                        <n-space>
-                            <n-button type="primary" @click="handleSearch">
-                                搜索
-                            </n-button>
-                            <n-button @click="resetBasicInfoForm">
-                                重置
-                            </n-button>
-                        </n-space>
-                    </n-form-item-gi>
-                </n-grid>
-            </n-card>
-        </n-form> -->
 
         <!-- 第二个表单：超限标准矩阵（固定值，单独绑定，修改布局） -->
         <n-form v-if="showSearchForm" :model="excessStandardsForm" label-placement="left" label-width="auto"
@@ -147,28 +108,32 @@
                 </n-card>
             </n-card>
         </n-form>
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
+            <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+                :style="{ marginBottom: '16px' }">
+                <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                    <n-form-item-gi v-for="field in filterFields" :key="field.key" :label="field.label">
+                        <n-input v-model:value="searchForm[field.key]" :placeholder="`请输入${field.label}`" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch" style="margin-left: 50px;">
+                                搜索
+                            </n-button>
+                            <n-button @click="resetSearch">
+                                重置
+                            </n-button>
+                        </n-space>
+                    </n-form-item-gi>
+                </n-grid>
+            </n-form>
+        </n-card>
 
-        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi v-for="field in filterFields" :key="field.key" :label="field.label">
-                    <n-input v-model:value="searchForm[field.key]" :placeholder="`请输入${field.label}`" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi>
-                    <n-space>
-                        <n-button type="primary" @click="handleSearch">
-                            搜索
-                        </n-button>
-                        <n-button @click="resetSearch">
-                            重置
-                        </n-button>
-                    </n-space>
-                </n-form-item-gi>
-            </n-grid>
-        </n-form>
-
-        <n-data-table :columns="columns" :data="tableData" :pagination="pagination" :bordered="true"
+        <n-data-table :columns="columns" :data="tableData" :bordered="true"
             :single-line="false" :virtual-scroll="true" :scroll-x="3000" :max-height="600" :loading="loading" />
+            <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
@@ -1135,7 +1100,7 @@ const t7Data = ref([
     width: 150px;
     padding: 12px;
     font-weight: bold;
-    background-color: #f5f5f5;
+    background-color: rgb(32, 44, 51);
     text-align: center;
     vertical-align: middle;
 }
@@ -1146,5 +1111,81 @@ const t7Data = ref([
     line-height: 1.6;
     text-align: left;
     vertical-align: middle;
+}
+
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 12px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-card__title) {
+  text-align: center; /* 标题居中 */
+  /* 可选：调整标题字体大小、颜色等其他样式 */
+  /* font-size: 18px; */
+  /* color: #333; */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input__placeholder) {
+    color: #8d8d8d !important;
+    /* 淡灰色 */
+
+}
+
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
 }
 </style>

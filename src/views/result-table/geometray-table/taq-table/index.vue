@@ -4,7 +4,7 @@
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
-                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
+                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer; margin-top:-20px"
                         @click="toggleSearchForm">
                         道岔框架尺寸报表 ({{ selectedType }})
                     </div>
@@ -12,42 +12,46 @@
                 点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
             </n-tooltip>
             <n-dropdown trigger="click" :options="dropdownOptions" @select="handleDropdownSelect">
-                <n-button style="margin-left: 16px;" type="primary">
+                <n-button style="margin-left: 16px; margin-top:-20px" type="primary">
                     切换表格
                 </n-button>
             </n-dropdown>
         </div>
         <!-- 搜索表单 -->
-        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi label="编号">
-                    <n-input v-model:value="searchForm.number" placeholder="请输入编号" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="位置">
-                    <n-input v-model:value="searchForm.direction" placeholder="请输入位置" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="标准值">
-                    <n-input v-model:value="searchForm.standardValue" placeholder="请输入标准值" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="实际值">
-                    <n-input v-model:value="searchForm.measurementValue" placeholder="请输入实际值" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi>
-                    <n-space>
-                        <n-button type="primary" @click="handleSearch">
-                            搜索
-                        </n-button>
-                        <n-button @click="resetSearch">
-                            重置
-                        </n-button>
-                    </n-space>
-                </n-form-item-gi>
-            </n-grid>
-        </n-form>
-
-        <n-data-table :columns="columns" :data="dataTable" :pagination="pagination" :bordered="true"
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
+            <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+                :style="{ marginBottom: '16px' }">
+                <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                    <n-form-item-gi label="编号">
+                        <n-input v-model:value="searchForm.number" placeholder="请输入编号" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="位置">
+                        <n-input v-model:value="searchForm.direction" placeholder="请输入位置" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="标准值">
+                        <n-input v-model:value="searchForm.standardValue" placeholder="请输入标准值" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="实际值">
+                        <n-input v-model:value="searchForm.measurementValue" placeholder="请输入实际值" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch">
+                                搜索
+                            </n-button>
+                            <n-button @click="resetSearch">
+                                重置
+                            </n-button>
+                        </n-space>
+                    </n-form-item-gi>
+                </n-grid>
+            </n-form>
+        </n-card>
+        <n-data-table :columns="columns" :data="dataTable" :bordered="true"
             :single-line="false" :loading="loading" />
+        <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
+            :on-update:page="pagination.onChange" :on-update:page-size="pagination.onUpdatePageSize"
+            style="margin-top: 16px; justify-content: center;" />
     </CommonPage>
 </template>
 
@@ -176,3 +180,73 @@ onMounted(() => {
     fetchData();
 });
 </script>
+<style scoped>
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 28px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input__placeholder) {
+    color: #8d8d8d !important;
+    /* 淡灰色 */
+
+}
+
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
+}
+</style>

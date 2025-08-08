@@ -8,7 +8,7 @@
  --------------------------------->
 
 <template>
-  <footer class="f-c-c text-14 text-gray-500">
+  <!-- <footer class="f-c-c text-14 text-gray-500">
     <p>
       Copyright © 2023
       <a
@@ -20,5 +20,5 @@
         Ronnie Zhang(大脸怪)
       </a>
     </p>
-  </footer>
+  </footer> -->
 </template>

@@ -1,6 +1,11 @@
 <template>
   <div class="trend-chart">
     <VChart :option="chartOption" autoresize @rendered="onChartRendered" />
+    <!-- 异常或正常状态显示 -->
+    <div class="status-indicator">
+      <img v-if="hasAnomaly" src="/error.png" alt="Error" class="error-icon" />
+      <div v-else class="normal-card">正常</div>
+    </div>
   </div>
 </template>
 
@@ -12,7 +17,7 @@ import {
   TitleComponent,
   TooltipComponent,
   MarkLineComponent,
-  DataZoomComponent 
+  DataZoomComponent,
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { UniversalTransition } from 'echarts/features';
@@ -59,6 +64,12 @@ const chartData = computed(() => {
   return { seriesData: downsampledData, xAxisData: downsampledXAxis };
 });
 
+// 异常检测逻辑：仅判断数据是否存在
+const hasAnomaly = computed(() => {
+  const rawData = props.data[props.parameter];
+  return !rawData || rawData.length === 0;
+});
+
 const chartOption = computed(() => ({
   title: {
     text: props.title,
@@ -67,7 +78,7 @@ const chartOption = computed(() => ({
     textStyle: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: '#FFFFFF', // 标题字体改为白色
+      color: '#FFFFFF',
     },
   },
   tooltip: {
@@ -86,10 +97,10 @@ const chartOption = computed(() => ({
     data: chartData.value.xAxisData,
     name: props.xAxisName,
     nameLocation: 'end',
-    nameGap: 20, // 增加间距以确保单位完全显示
+    nameGap: 20,
     nameTextStyle: {
       fontSize: 12,
-      color: '#FFFFFF', // X 轴单位字体改为白色
+      color: '#FFFFFF',
     },
     axisLine: {
       show: true,
@@ -113,7 +124,7 @@ const chartOption = computed(() => ({
     nameGap: 10,
     nameTextStyle: {
       fontSize: 12,
-      color: '#FFFFFF', // Y 轴单位字体改为白色
+      color: '#FFFFFF',
     },
     axisLine: {
       show: true,
@@ -129,19 +140,21 @@ const chartOption = computed(() => ({
       show: false,
     },
   },
-  series: [{
-    name: `${props.parameter}-曲线`,
-    type: 'line',
-    data: chartData.value.seriesData,
-    smooth: false,
-    lineStyle: { width: 1, color: props.color },
-    symbol: 'none',
-    animation: false,
-    large: true,
-    progressive: 500,
-    progressiveThreshold: 100,
-    showSymbol: false,
-  }],
+  series: [
+    {
+      name: `${props.parameter}-曲线`,
+      type: 'line',
+      data: chartData.value.seriesData,
+      smooth: false,
+      lineStyle: { width: 1, color: props.color },
+      symbol: 'none',
+      animation: false,
+      large: true,
+      progressive: 500,
+      progressiveThreshold: 100,
+      showSymbol: false,
+    },
+  ],
   animation: false,
 }));
 
@@ -154,5 +167,29 @@ const onChartRendered = () => {
 .trend-chart {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.status-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.error-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.normal-card {
+  background-color: #52CFC5; /* 修改为 RGB(82, 207, 197) 对应的十六进制 */
+  color: #ffffff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

@@ -4,7 +4,7 @@
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
-                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
+                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer; margin-top:-20px"
                         @click="toggleSearchForm">
                         曲线检查记录报表
                     </div>
@@ -14,18 +14,13 @@
         </div>
 
         <!-- 检查信息展示 -->
-        <n-card title="检查信息" v-if="showSearchForm" :bordered="true" style="margin-bottom: 16px;">
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
             <n-form :model="inspectionInfo" label-placement="left" label-width="auto">
                 <n-grid :cols="5" :x-gap="12" :y-gap="8">
                     <n-grid-item>
                         <n-form-item label="检查日期">
-                            <n-date-picker 
-                                v-model:value="inspectionInfo.inspectionDate" 
-                                type="datetime" 
-                                clearable 
-                                :value-format="'yyyy-MM-dd HH:mm:ss'" 
-                                :disabled="isDateInvalid"
-                            />
+                            <n-date-picker v-model:value="inspectionInfo.inspectionDate" type="datetime" clearable
+                                :value-format="'yyyy-MM-dd HH:mm:ss'" :disabled="isDateInvalid" />
                         </n-form-item>
                     </n-grid-item>
                     <n-grid-item>
@@ -53,11 +48,18 @@
                             <n-input v-model:value="inspectionInfo.chordLength" placeholder="请输入X米弦" clearable />
                         </n-form-item>
                     </n-grid-item> -->
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch">
+                                搜索
+                            </n-button>
+                            <n-button @click="resetSearch">
+                                重置
+                            </n-button>
+                        </n-space>
+                    </n-form-item-gi>
                 </n-grid>
-                <n-space style="margin-top: 16px;">
-                    <n-button type="primary" @click="handleSearch">筛选</n-button>
-                    <n-button @click="resetSearch">重置</n-button>
-                </n-space>
+
             </n-form>
         </n-card>
 
@@ -157,47 +159,47 @@ function parseDate(dateStr) {
 const columns = [
     {
         title: () => h('div', [
-            h('div', '序号'),
+            h('div', { style: { fontSize: '18px' } }, '序号'),
         ]),
         key: 'index',
         width: 80
     },
     {
         title: () => h('div', [
-            h('div', '测点里程'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'km'),
+            h('div', { style: { fontSize: '18px' } }, '测点里程'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'km'),
         ]),
         key: 'mileage',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '轨距'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '轨距'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'gauge',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '设计正矢'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '设计正矢'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'plannedVector',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '实测正矢'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '实测正矢'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'actualVector',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '正矢差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '正矢差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'vectorDifference',
         width: 100
@@ -220,24 +222,24 @@ const columns = [
     // },
     {
         title: () => h('div', [
-            h('div', '设计水平'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '设计水平'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'designLevation',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '实测水平'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '实测水平'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'actualSuperelevation',
         width: 100
     },
     {
         title: () => h('div', [
-            h('div', '水平差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '水平差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'superelevationDifference',
         width: 100
@@ -250,7 +252,7 @@ const columns = [
     //     key: 'superelevationGradient',
     //     width: 120
     // },
-    
+
     // {
     //     title: () => h('div', [
     //         h('div', '轨距千分率'),
@@ -448,5 +450,73 @@ onMounted(() => {
 .description-list dd {
     margin: 0;
     color: #555;
+}
+
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 12px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input__placeholder) {
+    color: #8d8d8d !important;
+    /* 淡灰色 */
+
+}
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
 }
 </style>

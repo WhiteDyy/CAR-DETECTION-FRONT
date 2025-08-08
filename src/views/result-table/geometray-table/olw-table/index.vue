@@ -4,7 +4,7 @@
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
-                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
+                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer; margin-top:-20px"
                         @click="toggleSearchForm">
                         {{ selectedType }}
                     </div>
@@ -12,40 +12,42 @@
                 点击可{{ showSearchForm ? '隐藏' : '显示' }}搜索表单
             </n-tooltip>
             <n-dropdown trigger="click" :options="dropdownOptions" @select="handleDropdownSelect">
-                <n-button style="margin-left: 16px;" type="primary">
+                <n-button style="margin-left: 16px; margin-top:-20px" type="primary">
                     切换表格
                 </n-button>
             </n-dropdown>
         </div>
 
         <!-- 搜索表单 -->
-        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi label="线路名">
-                    <n-input v-model:value="searchForm.lineName" placeholder="请输入线路名" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="里程">
-                    <n-input v-model:value="searchForm.mileage" placeholder="请输入里程" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="轨枕号">
-                    <n-input v-model:value="searchForm.sleeperNo" placeholder="请输入轨枕号" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="行别">
-                    <n-input v-model:value="searchForm.direction" placeholder="请输入行别" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi>
-                    <n-space>
-                        <n-button type="primary" @click="handleSearch">
-                            搜索
-                        </n-button>
-                        <n-button @click="resetSearch">
-                            重置
-                        </n-button>
-                    </n-space>
-                </n-form-item-gi>
-            </n-grid>
-        </n-form>
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
+            <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+                :style="{ marginBottom: '16px' }">
+                <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                    <n-form-item-gi label="线路名">
+                        <n-input v-model:value="searchForm.lineName" placeholder="请输入线路名" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="里程">
+                        <n-input v-model:value="searchForm.mileage" placeholder="请输入里程" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="轨枕号">
+                        <n-input v-model:value="searchForm.sleeperNo" placeholder="请输入轨枕号" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="行别">
+                        <n-input v-model:value="searchForm.direction" placeholder="请输入行别" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch">
+                                搜索
+                            </n-button>
+                            <n-button @click="resetSearch">
+                                重置
+                            </n-button>
+                        </n-space>
+                    </n-form-item-gi>
+                </n-grid>
+            </n-form>
+        </n-card>
 
         <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
         <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
@@ -90,7 +92,7 @@ const inspectionInfo = ref({});
 const columns = [
     {
         title: () => h('div', [
-            h('div', '里程'),
+            h('div', { style: { fontSize: '18px' } }, '里程'),
             h('div', { style: { fontSize: '12px', color: '#666' } }, 'km'),
         ]),
         key: 'mileage',
@@ -107,86 +109,86 @@ const columns = [
             ),
     },
     {
-        title: '轨枕号',
+        title: () => h('div', { style: { fontSize: '18px' } }, '轨枕号'),
         key: 'sleeperNo',
-        width: 100
+        width: 100,
     },
     {
         title: () => h('div', [
-            h('div', '高低设计值'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '高低设计值'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'heightDesignDeviation',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '轨向设计值'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '轨向设计值'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'trackDesignDeviation',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '左高低实测'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '左高低实测'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'leftHeightActual',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '左高低偏差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '左高低偏差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'leftHeightDeviation',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '右高低实测'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '右高低实测'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'rightHeightActual',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '右高低偏差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '右高低偏差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'rightHeightDeviation',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '左轨向实测'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '左轨向实测'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'leftTrackActual',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '左轨向偏差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '左轨向偏差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'leftTrackDeviation',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '右轨向实测'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '右轨向实测'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'rightTrackActual',
         width: 120
     },
     {
         title: () => h('div', [
-            h('div', '右轨向偏差'),
-            h('div', { style: { fontSize: '12px', color: '#666' } }, 'mm'),
+            h('div', { style: { fontSize: '18px' } }, '右轨向偏差'),
+            h('div', { style: { fontSize: '14px', color: '#666' } }, 'mm'),
         ]),
         key: 'rightTrackDeviation',
         width: 120
@@ -332,5 +334,74 @@ onMounted(() => {
 .description-list dd {
     margin: 0;
     color: #555;
+}
+
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 12px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input__placeholder) {
+    color: #8d8d8d !important;
+    /* 淡灰色 */
+
+}
+
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
 }
 </style>

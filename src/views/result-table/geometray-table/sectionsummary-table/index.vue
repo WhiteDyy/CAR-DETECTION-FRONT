@@ -4,7 +4,7 @@
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
-                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
+                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer; margin-top:-20px"
                         @click="toggleSearchForm">
                         区段小结报表
                     </div>
@@ -15,35 +15,38 @@
         </div>
 
         <!-- 搜索表单 -->
-        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi label="线路名称">
-                    <n-input v-model:value="searchForm.lineInfoLabel" placeholder="请输入线路名称" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="行别">
-                    <n-input v-model:value="searchForm.lineInfoValue" placeholder="请输入行别" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="检测日期">
-                    <n-date-picker v-model:value="searchForm.inspectionDate" type="datetime" clearable
-                        :value-format="'yyyy-MM-dd HH:mm:ss'" :disabled="isDateInvalid" />
-                </n-form-item-gi>
-                <n-form-item-gi>
-                    <n-space>
-                        <n-button type="primary" @click="handleSearch">搜索</n-button>
-                        <n-button @click="resetSearch">重置</n-button>
-                    </n-space>
-                </n-form-item-gi>
-            </n-grid>
-        </n-form>
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
+            <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+                :style="{ marginBottom: '16px' }">
+                <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                    <n-form-item-gi label="线路名称">
+                        <n-input v-model:value="searchForm.lineInfoLabel" placeholder="请输入线路名称" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="行别">
+                        <n-input v-model:value="searchForm.lineInfoValue" placeholder="请输入行别" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="检测日期">
+                        <n-date-picker v-model:value="searchForm.inspectionDate" type="datetime" clearable
+                            :value-format="'yyyy-MM-dd HH:mm:ss'" :disabled="isDateInvalid" />
+                    </n-form-item-gi>
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch">搜索</n-button>
+                            <n-button @click="resetSearch">重置</n-button>
+                        </n-space>
+                    </n-form-item-gi>
+                </n-grid>
+            </n-form>
+        </n-card>
 
         <!-- 报表顶部信息 -->
         <div class="report-info">
-            <div>区段起点: {{ reportInfo.startPoint }}</div>
-            <div>区段终点: {{ reportInfo.endPoint }}</div>
-            <div>检察人员: {{ reportInfo.inspector }}</div>
-            <div>检测日期: {{ reportInfo.inspectionDate }}</div>
-            <div>{{ reportInfo.lineInfoLabel }}: {{ reportInfo.lineInfoValue }}</div>
+            <div style="font-weight: bold; color: #333;">区段起点: {{ reportInfo.startPoint }}</div>
+            <div style="font-weight: bold; color: #333;">区段终点: {{ reportInfo.endPoint }}</div>
+            <div style="font-weight: bold; color: #333;">检察人员: {{ reportInfo.inspector }}</div>
+            <div style="font-weight: bold; color: #333;">检测日期: {{ reportInfo.inspectionDate }}</div>
+            <div style="font-weight: bold; color: #333;">{{ reportInfo.lineInfoLabel }}: {{ reportInfo.lineInfoValue }}
+            </div>
         </div>
 
         <!-- 表格 -->
@@ -338,5 +341,73 @@ onMounted(() => {
     border: 1px solid #eee;
     border-radius: 5px;
     background-color: #f9f9f9;
+}
+
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 12px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+:deep(.n-input__placeholder) {
+    color: #929090 !important;
+    /* 淡灰色 */
+
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
 }
 </style>

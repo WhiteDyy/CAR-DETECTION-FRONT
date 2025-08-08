@@ -4,7 +4,7 @@
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
             <n-tooltip trigger="hover">
                 <template #trigger>
-                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer;"
+                    <div style="text-align: center; font-weight: bold; font-size: 25px; cursor: pointer; margin-top:-20px"
                         @click="toggleSearchForm">
                         磨耗报表
                     </div>
@@ -13,42 +13,44 @@
             </n-tooltip>
         </div>
         <!-- 搜索表单 -->
-        <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
-            :style="{ marginBottom: '16px' }">
-            <n-grid :cols="4" :x-gap="12" :y-gap="8">
-                <n-form-item-gi label="里程">
-                    <n-input v-model:value="searchForm.mileage" placeholder="请输入里程" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="左轨垂磨">
-                    <n-input v-model:value="searchForm.leftVerticalWear" placeholder="请输入左轨垂磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="左轨侧磨">
-                    <n-input v-model:value="searchForm.leftSideWear" placeholder="请输入左轨侧磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="左轨总磨">
-                    <n-input v-model:value="searchForm.leftTotalWear" placeholder="请输入左轨总磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="右轨垂磨">
-                    <n-input v-model:value="searchForm.rightVerticalWear" placeholder="请输入右轨垂磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="右轨侧磨">
-                    <n-input v-model:value="searchForm.rightSideWear" placeholder="请输入右轨侧磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi label="右轨总磨">
-                    <n-input v-model:value="searchForm.rightTotalWear" placeholder="请输入右轨总磨" clearable />
-                </n-form-item-gi>
-                <n-form-item-gi>
-                    <n-space>
-                        <n-button type="primary" @click="handleSearch">
-                            搜索
-                        </n-button>
-                        <n-button @click="resetSearch">
-                            重置
-                        </n-button>
-                    </n-space>
-                </n-form-item-gi>
-            </n-grid>
-        </n-form>
+        <n-card v-if="showSearchForm" :bordered="true" class="card-style">
+            <n-form v-if="showSearchForm" :model="searchForm" label-placement="left" label-width="auto"
+                :style="{ marginBottom: '16px' }">
+                <n-grid :cols="4" :x-gap="12" :y-gap="8">
+                    <n-form-item-gi label="里程">
+                        <n-input v-model:value="searchForm.mileage" placeholder="请输入里程" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="左轨垂磨">
+                        <n-input v-model:value="searchForm.leftVerticalWear" placeholder="请输入左轨垂磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="左轨侧磨">
+                        <n-input v-model:value="searchForm.leftSideWear" placeholder="请输入左轨侧磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="左轨总磨">
+                        <n-input v-model:value="searchForm.leftTotalWear" placeholder="请输入左轨总磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="右轨垂磨">
+                        <n-input v-model:value="searchForm.rightVerticalWear" placeholder="请输入右轨垂磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="右轨侧磨">
+                        <n-input v-model:value="searchForm.rightSideWear" placeholder="请输入右轨侧磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi label="右轨总磨">
+                        <n-input v-model:value="searchForm.rightTotalWear" placeholder="请输入右轨总磨" clearable />
+                    </n-form-item-gi>
+                    <n-form-item-gi>
+                        <n-space>
+                            <n-button type="primary" @click="handleSearch">
+                                搜索
+                            </n-button>
+                            <n-button @click="resetSearch">
+                                重置
+                            </n-button>
+                        </n-space>
+                    </n-form-item-gi>
+                </n-grid>
+            </n-form>
+        </n-card>
 
         <n-data-table :columns="columns" :data="tableData" :bordered="true" :single-line="false" :loading="loading" />
         <n-pagination v-model:page="pagination.pageNo" :page-size="pagination.pageSize" :item-count="pagination.total"
@@ -58,7 +60,7 @@
 </template>
 
 <script setup>
-import { h, onMounted, ref, nextTick} from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { NButton, NTooltip } from 'naive-ui'
 import api from './api.js'
 
@@ -107,7 +109,7 @@ const pagination = ref(reactive({
 
 
 const searchForm = ref({
-    mileage:'',
+    mileage: '',
     leftVerticalWear: '',
     leftSideWear: '',
     leftTotalWear: '',
@@ -167,14 +169,14 @@ async function handleSearch() {
 async function resetSearch() {
     searchForm.value = {
         mileage: '',
-            leftVerticalWear: '',
-            sitemleftSideWear: '',
-            leftTotalWear: '',
-            rightVerticalWear: '',
-            rightSideWear: '',
-            rightTotalWear: '',
-            pageNo: 1,
-            pageSize: 10
+        leftVerticalWear: '',
+        sitemleftSideWear: '',
+        leftTotalWear: '',
+        rightVerticalWear: '',
+        rightSideWear: '',
+        rightTotalWear: '',
+        pageNo: 1,
+        pageSize: 10
     };
     await fetchData();
 }
@@ -184,3 +186,73 @@ onMounted(() => {
     fetchData()
 })
 </script>
+<style scoped>
+:deep(.n-data-table) {
+    border: 1px solid rgb(189, 187, 187);
+    border-collapse: collapse;
+    /* 关键属性：合并单元格边框 */
+}
+
+/* 表头背景颜色 */
+:deep(.n-data-table thead th) {
+    border: 1px solid rgb(189, 187, 187) !important;
+    background-color: rgb(32, 44, 51) !important;
+}
+
+/* 表体行背景色（覆盖整行） */
+:deep(.n-data-table tbody tr) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 主颜色 */
+}
+
+/* 可选：奇偶行区分（增强视觉） */
+:deep(.n-data-table tbody tr:nth-child(odd)) {
+    background-color: rgb(39, 88, 86) !important;
+    /* 奇数行 */
+}
+
+:deep(.n-data-table tbody tr:nth-child(even)) {
+    background-color: rgba(39, 88, 86, 0.8) !important;
+    /* 偶数行（更浅） */
+}
+
+/* 关键：覆盖单元格默认背景色（如果 UI 库有默认样式） */
+:deep(.n-data-table tbody td) {
+    border: 1px solid rgb(189, 187, 187);
+    background-color: transparent !important;
+    /* 清除 td 自带的背景色 */
+}
+
+.card-style {
+    background-color: rgb(32, 44, 51);
+    margin-top: -10px;
+    margin-bottom: 12px;
+
+}
+
+:deep(.custom-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input) {
+    background-color: rgb(233, 233, 233) !important;
+    /* 可选：修改边框颜色 */
+}
+
+:deep(.n-input__placeholder) {
+    color: #8d8d8d !important;
+    /* 淡灰色 */
+
+}
+
+:deep(.n-input__input-el) {
+    color: black;
+}
+
+/* 修改输入框为圆角样式 */
+:deep(.custom-input .n-input__input) {
+    border-radius: 12px !important;
+    /* 圆角大小 */
+}
+</style>

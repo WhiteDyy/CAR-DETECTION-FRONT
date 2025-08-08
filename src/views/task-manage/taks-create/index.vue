@@ -1,121 +1,130 @@
-
 <template>
   <n-layout>
-    <!-- 顶部线路预览 -->
+    <n-modal v-model:show="showInitialDialog" preset="card" title="新建线路" :style="{
+      width: '600px'
+    }" :header-style="{
+      backgroundColor: 'rgba(82, 207, 197, 0.2)',
+      border: '2px solid rgba(82, 207, 197, 1)',
+      borderTopLeftRadius: '16px',
+      borderTopRightRadius: '16px'
+    }" :content-style="{
+      backgroundColor: 'rgba(82, 207, 197, 0.2)',
+      border: '2px solid rgba(82, 207, 197, 1)',
+      borderBottomLeftRadius: '16px',
+      borderBottomRightRadius: '16px'
+    }">
+
+      <n-form label-placement="left" label-width="100px">
+        <!-- 线路名称 -->
+        <n-form-item label="线路名称" style="margin-top: 30px;">
+          <n-input v-model:value="routeForm.routeName" placeholder="请输入线路名称" :clearable="true" />
+        </n-form-item>
+
+        <!-- 起始节点 -->
+        <n-form-item label="起始节点">
+          <n-select v-model:value="routeForm.startId" :options="nodeOptions" placeholder="选择起始节点" :clearable="true"
+            style="width: 200px;" />
+        </n-form-item>
+
+        <!-- 终点节点 -->
+        <n-form-item label="终点节点">
+          <n-select v-model:value="routeForm.endId" :options="nodeOptions" placeholder="选择终点节点" :clearable="true"
+            style="width: 200px;" />
+        </n-form-item>
+
+        <!-- 道岔数量 -->
+        <n-form-item label="道岔数量">
+          <n-select v-model:value="routeForm.branchCount" :options="branchCountOptions" placeholder="选择道岔数量"
+            :clearable="true" style="width: 200px;" />
+        </n-form-item>
+
+        <n-space justify="end" :style="{ 'margin-top': '24px' }">
+          <n-button @click="resetForm" class="custom-button">重置任务</n-button>
+          <n-button type="primary" @click="initRoute" class="custom-primary-button">确定</n-button>
+        </n-space>
+      </n-form>
+    </n-modal>
+
+    <!-- 线路预览区域 -->
     <n-layout-header bordered style="padding: 20px;">
-      <n-card title="线路预览">
+      <n-card :title="routeForm.routeName || '线路预览'">
         <div class="preview-container" ref="container">
-          <div class="preview-content">
-            <n-timeline horizontal>
-              <n-timeline-item
-                v-for="(node, index) in nodes"
-                :key="index"
-                :type="node.type === 'main' ? 'success' : 'warning'"
-                :title="node.content"
-                :content="node.type === 'main' ? `里程: ${node.mileage}` : `型号: ${getTurnoutLabelAndName(node.direction)}`"
-              />
-            </n-timeline>
+          <!-- 节点和连接线容器 -->
+          <div class="node-container">
+            <div v-for="(node, index) in nodes" :key="index" :class="['node', node.type]"
+              :style="nodePositionStyle(node)">
+              <div class="node-content">
+                <div class="node-label">{{ node.content }}</div>
+                <div class="node-info" v-if="node.type === 'main'">
+                  里程: {{ node.mileage }}
+                </div>
+
+                <!-- 修改道岔配置区域，同时显示label和turnoutName -->
+                <div class="turnout-config" v-if="node.type === 'branch'">
+                  <n-select v-model:value="node.direction" :options="directionOptions" placeholder="选择型号" size="small"
+                    style="margin-bottom: 5px; width: 100%;" />
+                  <n-select v-model:value="node.trackDirection" :options="trackDirectionOptions" placeholder="选择轨向"
+                    size="small" style="width: 100%;" />
+                  <!-- 新增显示turnoutName -->
+                  <div class="turnout-name" v-if="node.direction">
+                    {{ getTurnoutName(node.direction) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 连接线 -->
+            <svg class="connections" width="100%" height="100%">
+              <path v-for="(path, index) in connectionPaths" :key="`path-${index}`" :d="path.d" fill="none"
+                stroke="white" stroke-width="2" /> <!-- 修改为白色线条，移除箭头 -->
+
+              <!-- 移除箭头标记，因为不再需要 -->
+            </svg>
           </div>
         </div>
       </n-card>
     </n-layout-header>
 
-    <!-- 中部输入区域 -->
-    <n-layout-content style="padding: 20px;">
-      <n-card title="线路输入">
-        <n-form :model="routeForm" inline>
-          <n-form-item label="起点节点">
-            <n-select
-              v-model:value="routeForm.startId"
-              :options="nodeOptions"
-              placeholder="选择起点节点"
-              style="width: 150px;"
-            />
-          </n-form-item>
-          <n-form-item label="终点节点">
-            <n-select
-              v-model:value="routeForm.endId"
-              :options="nodeOptions"
-              placeholder="选择终点节点"
-              style="width: 150px;"
-            />
-          </n-form-item>
-          <n-form-item label="道岔数量">
-            <n-select
-              v-model:value="routeForm.branchCount"
-              :options="branchCountOptions"
-              placeholder="选择道岔数量"
-              style="width: 150px;"
-            />
-          </n-form-item>
-          <n-form-item>
-            <n-button type="primary" :disabled="!allTurnoutsSelected" @click="generateRoute">生成预览</n-button>
-          </n-form-item>
-          <n-form-item>
-            <n-button @click="resetForm">重置任务</n-button>
-          </n-form-item>
-          <n-form-item>
-            <n-button type="primary" @click="saveToLocal">保存任务</n-button>
-          </n-form-item>
-        </n-form>
-      </n-card>
-    </n-layout-content>
-
-    <!-- 底部道岔配置 -->
     <n-layout-footer bordered style="padding: 20px;">
-      <n-card title="道岔配置" ref="card">
-        <n-form :model="routeForm" class="turnout-form">
-          <n-form-item
-            v-for="(branch, index) in routeForm.branchConfigs"
-            :key="index"
-            :label="`道岔 ${index + 1}`"
-            class="turnout-item"
-          >
-            <div class="turnout-name" v-if="branch.type">
-              {{ getTurnoutName(branch.type) }}
-            </div>
-            <n-select
-              v-model:value="routeForm.branchConfigs[index].type"
-              :options="directionOptions"
-              placeholder="选择道岔型号"
-              style="width: 180px;"
-            />
-          </n-form-item>
-        </n-form>
-      </n-card>
+      <n-space justify="end">
+        <n-button @click="resetForm">重置任务</n-button>
+        <n-button type="primary" @click="saveToLocal">保存任务</n-button>
+      </n-space>
     </n-layout-footer>
   </n-layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import {
   NLayout,
   NLayoutHeader,
-  NLayoutContent,
   NLayoutFooter,
   NCard,
   NForm,
   NFormItem,
   NButton,
   NSelect,
-  NTimeline,
-  NTimelineItem,
+  NSpace,
+  NModal
 } from 'naive-ui';
 
-const nodes = ref([]);
-const container = ref(null);
-const card = ref(null);
+// 控制初始弹框显示
+const showInitialDialog = ref(true);
 
-// 表单数据
+// 线路表单数据
 const routeForm = ref({
+  routeName: '',
   startId: null,
   endId: null,
   branchCount: 0,
-  branchConfigs: [],
 });
 
-// 节点选项、道岔数量选项、道岔型号选项
+const nodes = ref([]);
+const container = ref(null);
+const connectionPaths = ref([]);
+
+// 选项数据
 const nodeOptions = [
   { label: '站点A', value: 'A' },
   { label: '站点B', value: 'B' },
@@ -130,6 +139,8 @@ const branchCountOptions = [
   { label: '4', value: 4 },
   { label: '5', value: 5 },
   { label: '10', value: 10 },
+  { label: '15', value: 15 },
+  { label: '21', value: 21 },
 ];
 const directionOptions = [
   { label: '1号道岔', value: 'turnout1', turnoutName: 'SC330 道岔' },
@@ -137,93 +148,147 @@ const directionOptions = [
   { label: '3号道岔', value: 'turnout3', turnoutName: '专线4257 道岔' },
   { label: '4号道岔', value: 'turnout4', turnoutName: 'SC340 渡线' },
 ];
-
-// 验证所有道岔类型是否已选择
-const allTurnoutsSelected = computed(() => {
-  return routeForm.value.branchConfigs.every(branch => branch.type !== null);
-});
+const trackDirectionOptions = [
+  { label: 'A股', value: 'A' },
+  { label: 'B股', value: 'B' },
+];
 
 // 获取道岔名称
 const getTurnoutName = (type) => {
+  if (!type) return '';
   const option = directionOptions.find(opt => opt.value === type);
   return option ? option.turnoutName : '';
 };
 
-// 获取道岔类型和名称
-const getTurnoutLabelAndName = (type) => {
-  const option = directionOptions.find(opt => opt.value === type);
-  return option ? `${option.label} ${option.turnoutName}` : '';
+// 初始化线路
+const initRoute = () => {
+  if (!routeForm.value.routeName) {
+    window.$message?.error('请输入线路名称');
+    return;
+  }
+
+  if (!routeForm.value.startId) {
+    window.$message?.error('请选择起始节点');
+    return;
+  }
+
+  if (!routeForm.value.endId) {
+    window.$message?.error('请选择终点节点');
+    return;
+  }
+
+  showInitialDialog.value = false;
+  generateRoute();
 };
 
-// 监听道岔数量变化
-watch(
-  () => routeForm.value.branchCount,
-  (newCount) => {
-    const currentLength = routeForm.value.branchConfigs.length;
-    if (newCount > currentLength) {
-      for (let i = currentLength; i < newCount; i++) {
-        routeForm.value.branchConfigs.push({ type: null });
-      }
-    } else if (newCount < currentLength) {
-      routeForm.value.branchConfigs.splice(newCount);
-    }
-  }
-);
+// 计算节点位置样式
+const nodePositionStyle = (node) => {
+  return {
+    left: `${node.position.x}px`,
+    top: `${node.position.y}px`,
+  };
+};
 
-// 节点宽度和高度（用于估算时间线尺寸）
-const NODE_WIDTH = 150;
-const NODE_HEIGHT = 100;
-const PREVIEW_HEIGHT = 200;
-
-// 生成线路
+// 生成线路图
 const generateRoute = () => {
-  if (!allTurnoutsSelected.value) {
-    window.$message.error('请为所有道岔选择型号');
-    return;
-  }
-
   nodes.value = [];
+  connectionPaths.value = [];
 
-  const { startId, endId, branchCount, branchConfigs } = routeForm.value;
+  const { startId, endId, branchCount } = routeForm.value;
 
-  if (!startId || !endId) {
-    window.$message.error('请选择起点和终点');
-    return;
-  }
+  if (!startId || !endId) return;
 
-  const isCircular = startId === endId;
-  const totalNodes = branchCount + (isCircular ? 1 : 2);
+  const totalNodes = branchCount + 2;
+  const nodesPerRow = 4;
+  const rowCount = Math.ceil(totalNodes / nodesPerRow);
 
-  // 生成节点
+  // 节点布局参数
+  const containerWidth = container.value ? container.value.offsetWidth : 800;
+  const nodeWidth = 150; // 增加宽度以容纳配置选项
+  const nodeHeight = branchCount > 0 ? 120 : 80; // 道岔节点更高
+  const horizontalSpacing = (containerWidth - nodeWidth * Math.min(totalNodes, nodesPerRow)) / (Math.min(totalNodes, nodesPerRow) + 1);
+  const verticalSpacing = 120;
+
+  // 生成节点并计算位置
   for (let i = 0; i < totalNodes; i++) {
+    const row = Math.floor(i / nodesPerRow);
+    const col = i % nodesPerRow;
+
+    // 处理换行时的列号（蛇形排列）
+    let effectiveCol;
+    if (row % 2 === 0) {
+      // 偶数行从左到右
+      effectiveCol = col;
+    } else {
+      // 奇数行从右到左
+      effectiveCol = nodesPerRow - col - 1;
+    }
+
+    // 节点位置计算
+    let x = horizontalSpacing + effectiveCol * (nodeWidth + horizontalSpacing);
+    let y = 30 + row * (nodeHeight + verticalSpacing);
+
+    // 创建节点
     let node;
     if (i === 0) {
+      // 起点节点
       node = {
         id: i,
         content: `站点${startId}`,
         type: 'main',
         mileage: '0',
+        position: { x, y }
       };
-    } else if (i === totalNodes - 1 && !isCircular) {
+    } else if (i === totalNodes - 1) {
+      // 终点节点
       node = {
         id: i,
         content: `站点${endId}`,
         type: 'main',
         mileage: `${(i * 100).toFixed(1)}`,
+        position: { x, y }
       };
     } else {
-      const branchIndex = isCircular ? i : i - 1;
+      // 道岔节点
       node = {
         id: i,
-        content: `道岔${branchIndex + 1}`,
+        content: `道岔${i}`,
         type: 'branch',
-        direction: branchConfigs[branchIndex].type,
+        direction: null,
+        trackDirection: 'A', // 默认A股
+        position: { x, y }
       };
     }
     nodes.value.push(node);
   }
+
+  // 生成连接线路径
+  generateConnectionPaths(rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing);
 };
 
+// 生成连接线路径 - 修改为白色线条且不带箭头
+const generateConnectionPaths = (rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing) => {
+  const paths = [];
+
+  for (let i = 0; i < nodes.value.length - 1; i++) {
+    const currentNode = nodes.value[i];
+    const nextNode = nodes.value[i + 1];
+
+    const startX = currentNode.position.x + nodeWidth/2;
+    const startY = currentNode.position.y + nodeHeight;
+    const endX = nextNode.position.x + nodeWidth/2;
+    const endY = nextNode.position.y+nodeHeight;
+    // console.log(i,'：(',startX,',',startY,')-->(',endX,',',endY,')');
+    
+
+    // 简单直线连接，不带箭头
+    paths.push({
+      d: `M ${startX} ${startY} L ${endX} ${endY}`
+    });
+  }
+
+  connectionPaths.value = paths;
+};
 // 保存到本地
 const saveToLocal = () => {
   const data = {
@@ -231,7 +296,7 @@ const saveToLocal = () => {
     routeForm: routeForm.value,
   };
   localStorage.setItem('routeData', JSON.stringify(data));
-  window.$message.success('线路图已保存到本地');
+  window.$message?.success('线路图已保存到本地');
 };
 
 // 读取本地数据
@@ -239,102 +304,205 @@ const loadFromLocal = () => {
   const savedData = localStorage.getItem('routeData');
   if (savedData) {
     const data = JSON.parse(savedData);
+    routeForm.value = data.routeForm;
     nodes.value = data.nodes;
-    routeForm.value = { ...routeForm.value, ...data.routeForm };
-    nextTick(() => generateRoute());
+
+    if (data.nodes.length > 0) {
+      showInitialDialog.value = false;
+    }
   }
 };
 
 // 重置表单
 const resetForm = () => {
   routeForm.value = {
+    routeName: '',
     startId: null,
     endId: null,
     branchCount: 0,
-    branchConfigs: [],
   };
+
   nodes.value = [];
+  connectionPaths.value = [];
+  showInitialDialog.value = true;
 };
 
 // 生命周期钩子
 onMounted(() => {
   loadFromLocal();
+  nextTick(() => {
+    if (nodes.value.length > 0) {
+      generateRoute();
+    }
+  });
 });
 </script>
 
 <style scoped>
+.turnout-config .turnout-name {
+  font-size: 12px;
+  color: #ccc;
+  margin-top: 5px;
+  text-align: center;
+}
+
 .preview-container {
   position: relative;
   width: 100%;
-  height: 150px;
-  border: 1px solid #ccc;
-  overflow-x: auto;
-  overflow-y: hidden;
-  background: #f9f9f9;
-  padding: 20px;
+  height: 88%;
+  border: 2px solid #09e2d0f1;
+  border-radius: 19px;
+  background-image: url('/Frame.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: auto;
 }
 
-.preview-content {
-  width: fit-content;
-  height: fit-content;
-  min-width: 100%;
+.node-container {
+  position: relative;
+  width: 100%;
+  min-height: 750px;
 }
 
-.n-timeline {
-  padding: 0 10px;
-  white-space: nowrap;
-}
-
-.n-timeline-item {
-  min-width: 150px;
-  display: inline-block;
-}
-
-.preview-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.preview-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-.preview-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-/* 道岔表单样式 */
-.turnout-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  padding: 8px;
-}
-
-.turnout-item {
+.node {
+  position: absolute;
+  width: 180px;
+  min-height: 150px;
   display: flex;
-  flex-direction: column;
-  padding: 12px;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  transition: all 0.2s;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  z-index: 10;
+  transition: all 0.3s ease;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
-.turnout-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.node.main {
+  height: 80px;
+  background-color: #4caf50;
+  color: white;
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
-.turnout-item .n-form-item__label {
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 4px;
+.node.branch {
+  height: 120px;
+  background-color: #ff6600;
+  color: white;
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
 }
 
-.turnout-name {
+.node-content {
+  text-align: center;
+  width: 100%;
+  font-size: large;
+}
+
+.node-label {
+  font-weight: bold;
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+.node-info {
   font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-  text-align: left;
+  margin-bottom: 8px;
+}
+
+/* 修改道岔配置区域样式，同时显示label和turnoutName */
+.turnout-config {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.turnout-config :deep(.n-select) {
+  margin-bottom: 5px;
+}
+
+.turnout-config :deep(.n-select .n-select-option) {
+  display: flex;
+  justify-content: space-between;
+}
+
+.turnout-config :deep(.n-select .n-select-option span:last-child) {
+  color: #ccc;
+  font-size: 12px;
+}
+
+.connections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+}
+
+/* 修改连接线样式为白色且不带箭头 */
+:deep(.connections path) {
+  stroke: white;
+  /* 白色线条 */
+  marker-end: none;
+  /* 移除箭头 */
+}
+
+:deep(.n-form) {
+  --n-color: rgba(82, 207, 197, 1);
+  --n-text-color: #333;
+  --n-border-radius: 12px;
+}
+
+:deep(.n-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.n-input) {
+  --n-input-text-color: #f12020;
+  --n-input-border-color: rgba(82, 207, 197, 0.5);
+  --n-input-bg-color: rgba(255, 255, 255, 0.7);
+  --n-input-hover-border-color: rgba(82, 207, 197, 0.8);
+  --n-input-focus-border-color: rgba(82, 207, 197, 1);
+}
+
+:deep(.n-select) {
+  --n-select-text-color: #333;
+  --n-select-border-color: rgba(82, 207, 197, 0.5);
+  --n-select-bg-color: rgba(255, 255, 255, 0.7);
+}
+
+:deep(.n-select .n-select-option:hover) {
+  --n-select-option-hover-bg-color: rgba(82, 207, 197, 0.2);
+}
+
+:deep(.n-select .n-select-option--selected) {
+  --n-select-option-selected-bg-color: rgba(82, 207, 197, 0.3);
+}
+
+:deep(.n-select .n-select-focused) {
+  --n-select-focused-border-color: rgba(82, 207, 197, 1);
+}
+
+:deep(.custom-button) {
+  background-color: transparent;
+  border: 1px solid rgba(82, 207, 197, 1);
+  color: rgba(82, 207, 197, 1);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+:deep(.custom-button:hover) {
+  background-color: rgba(82, 207, 197, 0.2);
+}
+
+:deep(.custom-primary-button) {
+  background-color: rgba(82, 207, 197, 1);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+:deep(.custom-primary-button:hover) {
+  background-color: rgba(82, 207, 197, 0.8);
 }
 </style>
