@@ -3,33 +3,21 @@
     <n-space vertical :size="16" class="mt-12">
       <!-- 实时状态卡片 - 改为横向展示 -->
       <n-card title="实时状态" segmented>
-        <n-space justify="center" align="center" vertical :size="16">
-          <n-space align="center">
+        <n-space justify="center" algin="center" vertical :size="16">
+          <n-space algin="center">
             <n-statistic label="当前时间" :value="currentTime">
               <template #prefix>
                 <n-icon class="i-mdi:clock-outline text-blue-500" />
               </template>
             </n-statistic>
-
-            <n-statistic label="当前位置 (经纬度)" :value="currentPosition">
-              <template #prefix>
-                <n-icon class="i-mdi:map-marker-outline text-blue-500" />
-              </template>
-            </n-statistic>
-
-            <n-statistic label="当前速度">
-              <template #prefix>
-                <n-icon class="i-mdi:speedometer text-blue-500" />
-              </template>
-              <template #default>
-                {{ currentSpeed }}
-              </template>
-              <template #suffix>
-                公里/小时
-              </template>
-            </n-statistic>
           </n-space>
-        </n-space>
+          </n-space>
+        <div>
+          <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+          
+          <p>当前图片: {{ currentImage }}</p>
+          <!-- <p>图片数量: {{ imageList.length }}</p> -->
+        </div>
       </n-card>
 
       <n-row :gutter="16">
@@ -273,7 +261,6 @@ const stopPlayback = () => {
 }
 
 
-// 处理图片错误
 const handleImageError = (e) => {
   e.target.src = '/error-placeholder.jpg' // 设置默认错误图片
 }
@@ -295,6 +282,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 5. 【卸载】在组件销毁时，停止SSE服务并移除监听器，防止内存泄漏
   stopPlayback()
   console.warn('Disconnecting from SSE endpoint.')
   sse.removeEventListener('surface_img', handleImageUpdate)

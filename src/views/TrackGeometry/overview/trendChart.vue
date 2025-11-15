@@ -76,7 +76,7 @@ const chartOption = computed(() => {
 
     const grids = props.parameters
         .map((_, index) => ({
-            left: '2%', right: '3%',
+            left: '5%', right: '3%',
             top: 20 + (gridHeight + gridSpacing) * index,
             height: gridHeight,
         }))

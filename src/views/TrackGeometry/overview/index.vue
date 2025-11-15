@@ -156,32 +156,71 @@ const sse = new SSEService(sseUrl);
  * 3. 【定义】处理从SSE接收到的每一条消息
  * @param {object} point - 后端推送的 TrackDataPointDto 对象
  */
+// const handleSseMessage = (point) => {
+//     // 将后端数据格式转换为前端需要的格式
+//     const newData = {
+//         mileage: point.mileage,
+//         ...point.measurements, // 将 measurements 对象平铺到 newData 中
+//     };
+//     console.warn('Received SSE data:', newData);
+
+//     let newTag = null;
+//     if (point.tag) {
+//         newTag = {
+//             mileage: point.mileage,
+//             id: point.tag.id,
+//         };
+//     }
+
+//     let newSleeper = null;
+//     if (point.sleeper) {
+//         newSleeper = {
+//             mileage: point.mileage,
+//             displayId: point.sleeper.displayId,
+//             uniqueId: `sleeper-${sleeperUniqueCounter++}`, // 前端维护唯一ID
+//         };
+//     }
+
+//     // 调用已有的函数来更新图表状态，这里什么都不用改
+//     updateChartData(newData, newTag, newSleeper);
+// };
 const handleSseMessage = (point) => {
     // 将后端数据格式转换为前端需要的格式
     const newData = {
-        mileage: point.mileage,
-        ...point.measurements, // 将 measurements 对象平铺到 newData 中
+        mileage: point.sensorData.mileage,
+        轨距: point.tdf01Gauge,
+        轨距变化率: 0, // 实际数据中没有这个字段，可能需要计算或设为0
+        左高低: point.lsf01Level ? point.lsf01Level[0] : 0,
+        右高低: point.lsf01Level ? point.lsf01Level[1] : 0,
+        左轨向: 0, // 实际数据中没有这个字段
+        右轨向: 0, // 实际数据中没有这个字段
+        水平: point.sensorData.dipmeter,
+        三角坑: 0, // 实际数据中没有这个字段
+        垂直磨耗: 0, // 实际数据中没有这个字段
+        侧面磨耗: 0, // 实际数据中没有这个字段
     };
     console.warn('Received SSE data:', newData);
 
     let newTag = null;
-    if (point.tag) {
+    // 根据实际数据结构判断是否有标签信息
+    if (point.sensorData.codee40) {
         newTag = {
-            mileage: point.mileage,
-            id: point.tag.id,
+            mileage: point.sensorData.mileage,
+            id: point.sensorData.codee40,
         };
     }
 
     let newSleeper = null;
-    if (point.sleeper) {
+    // 根据实际数据结构判断是否有轨枕信息
+    if (point.sensorData.sleeper) {
         newSleeper = {
-            mileage: point.mileage,
-            displayId: point.sleeper.displayId,
+            mileage: point.sensorData.mileage,
+            displayId: point.sensorData.sleeper,
             uniqueId: `sleeper-${sleeperUniqueCounter++}`, // 前端维护唯一ID
         };
     }
 
-    // 调用已有的函数来更新图表状态，这里什么都不用改
+    // 调用已有的函数来更新图表状态
     updateChartData(newData, newTag, newSleeper);
 };
 import { useRouter } from 'vue-router';

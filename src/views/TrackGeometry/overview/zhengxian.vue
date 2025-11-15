@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import TrendChart from './TrendChart.vue' // 调整为你的TrendChart组件实际路径
+import TrendChart from './trendChart.vue' // 调整为你的TrendChart组件实际路径
 
 // 定义props接收外部传入的数据
 defineProps({
