@@ -1,5 +1,5 @@
-import { request } from "@/utils";
+import { request } from '@/utils'
 
-export default{
-    getSurface: data =>request.post('/surface/search',data),
+export default {
+  getSurface: data => request.post('/surface/search', data),
 }

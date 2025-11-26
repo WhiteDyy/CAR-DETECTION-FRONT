@@ -3,27 +3,29 @@
     <VChart :option="chartOption" autoresize @rendered="onChartRendered" />
     <!-- 异常或正常状态显示 -->
     <div class="status-indicator">
-      <img v-if="hasAnomaly" src="/error.png" alt="Error" class="error-icon" />
-      <div v-else class="normal-card">正常</div>
+      <img v-if="hasAnomaly" src="/error.png" alt="Error" class="error-icon">
+      <div v-else class="normal-card">
+        正常
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { LineChart } from 'echarts/charts';
+import { LineChart } from 'echarts/charts'
 import {
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
+  MarkLineComponent,
   TitleComponent,
   TooltipComponent,
-  MarkLineComponent,
-  DataZoomComponent,
-} from 'echarts/components';
-import { use } from 'echarts/core';
-import { UniversalTransition } from 'echarts/features';
-import { CanvasRenderer } from 'echarts/renderers';
-import { computed, ref } from 'vue';
-import VChart from 'vue-echarts';
+} from 'echarts/components'
+import { use } from 'echarts/core'
+import { UniversalTransition } from 'echarts/features'
+import { CanvasRenderer } from 'echarts/renderers'
+import { computed } from 'vue'
+import VChart from 'vue-echarts'
 
 const props = defineProps({
   data: { type: Object, required: true },
@@ -33,7 +35,7 @@ const props = defineProps({
   title: { type: String, default: '折线图' },
   xAxisName: { type: String, default: 'X Axis' },
   yAxisName: { type: String, default: 'Y Axis' },
-});
+})
 
 use([
   TooltipComponent,
@@ -45,30 +47,30 @@ use([
   LineChart,
   CanvasRenderer,
   UniversalTransition,
-]);
+])
 
-const maxDisplayPoints = 100;
+const maxDisplayPoints = 100
 const chartData = computed(() => {
-  const rawData = props.data[props.parameter] || [];
-  const xAxis = props.xAxisData || [];
+  const rawData = props.data[props.parameter] || []
+  const xAxis = props.xAxisData || []
   if (rawData.length <= maxDisplayPoints) {
-    return { seriesData: rawData, xAxisData: xAxis };
+    return { seriesData: rawData, xAxisData: xAxis }
   }
-  const step = Math.ceil(rawData.length / maxDisplayPoints);
-  const downsampledData = [];
-  const downsampledXAxis = [];
+  const step = Math.ceil(rawData.length / maxDisplayPoints)
+  const downsampledData = []
+  const downsampledXAxis = []
   for (let i = 0; i < rawData.length; i += step) {
-    downsampledData.push(rawData[i]);
-    downsampledXAxis.push(xAxis[i] || i);
+    downsampledData.push(rawData[i])
+    downsampledXAxis.push(xAxis[i] || i)
   }
-  return { seriesData: downsampledData, xAxisData: downsampledXAxis };
-});
+  return { seriesData: downsampledData, xAxisData: downsampledXAxis }
+})
 
 // 异常检测逻辑：仅判断数据是否存在
 const hasAnomaly = computed(() => {
-  const rawData = props.data[props.parameter];
-  return !rawData || rawData.length === 0;
-});
+  const rawData = props.data[props.parameter]
+  return !rawData || rawData.length === 0
+})
 
 const chartOption = computed(() => ({
   title: {
@@ -156,11 +158,11 @@ const chartOption = computed(() => ({
     },
   ],
   animation: false,
-}));
+}))
 
-const onChartRendered = () => {
+function onChartRendered() {
   // console.warn(`Chart ${props.title} rendered`);
-};
+}
 </script>
 
 <style scoped>
@@ -183,7 +185,7 @@ const onChartRendered = () => {
 }
 
 .normal-card {
-  background-color: #52CFC5; /* 修改为 RGB(82, 207, 197) 对应的十六进制 */
+  background-color: #52cfc5; /* 修改为 RGB(82, 207, 197) 对应的十六进制 */
   color: #ffffff;
   font-size: 12px;
   padding: 4px 8px;

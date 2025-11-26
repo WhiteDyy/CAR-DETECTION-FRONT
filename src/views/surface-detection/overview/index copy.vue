@@ -4,7 +4,7 @@
       <n-card title="实时检测图像" segmented>
         <div>
           <template v-if="currentImage">
-            <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+            <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError">
             <p>当前图片: {{ currentImage }}</p>
           </template>
           <template v-else>
@@ -46,7 +46,7 @@
 
         <n-grid-item>
           <n-card title="病害统计 (当前图像)" segmented>
-            <n-list hoverable clickable>
+            <n-list clickable hoverable>
               <n-list-item v-for="defect in defectsData" :key="defect.id">
                 <template #prefix>
                   <n-icon :class="defect.icon" :style="{ color: defect.color }" />
@@ -67,13 +67,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
 import SSEService from '@/utils/sse/sseService' // 1. 【引入】SSE服务工具
+import { onMounted, onUnmounted, ref } from 'vue'
 
 // --- 响应式数据定义 ---
 
 // 实时图像的URL
-// const imageSrc = ref('') 
+// const imageSrc = ref('')
 // const imageSrc = "/api/images/20250630_121811390_be9103d9.jpg"
 
 // 实时状态数据
@@ -88,7 +88,6 @@ const defectsData = ref([
   { id: 3, category: '轨枕病害', count: 0, icon: 'i-mdi:view-grid-outline', color: '#5BC0DE' },
   { id: 4, category: '道床病害', count: 0, icon: 'i-mdi:dots-grid', color: '#5CB85C' },
 ])
-
 
 // --- SSE 连接与数据处理 ---
 
@@ -148,7 +147,6 @@ const sse = new SSEService(sseUrl)
 //   }
 // }
 
-
 // 配置
 const TARGET_FPS = 5 // 目标帧率（5帧/秒）
 const BUFFER_SIZE = 3 // 缓冲队列长度
@@ -157,11 +155,11 @@ const BUFFER_SIZE = 3 // 缓冲队列长度
 const imageQueue = ref([]) // 图片缓冲队列
 const currentImage = ref('')
 const isPlaying = ref(false)
-let frameInterval = 1000 / TARGET_FPS
+const frameInterval = 1000 / TARGET_FPS
 let playTimer = null
 
 // SSE消息处理
-const handleImageUpdate = (data) => {
+function handleImageUpdate(data) {
   if (data.url) {
     // 将新图片加入队列（自动限制队列长度）
     if (imageQueue.value.length >= BUFFER_SIZE) {
@@ -177,15 +175,16 @@ const handleImageUpdate = (data) => {
 }
 
 // 开始播放
-const startPlayback = () => {
-  if (isPlaying.value) return
+function startPlayback() {
+  if (isPlaying.value)
+    return
 
   isPlaying.value = true
   playNextFrame()
 }
 
 // 播放下一帧
-const playNextFrame = () => {
+function playNextFrame() {
   if (imageQueue.value.length === 0) {
     isPlaying.value = false
     return
@@ -200,13 +199,10 @@ const playNextFrame = () => {
 }
 
 // 停止播放
-const stopPlayback = () => {
+function stopPlayback() {
   clearTimeout(playTimer)
   isPlaying.value = false
 }
-
-
-
 
 onMounted(() => {
   // 4. 【挂载】在组件挂载后，开始监听SSE事件并启动连接
@@ -230,7 +226,6 @@ onUnmounted(() => {
   sse.removeEventListener('image-url', handleImageUpdate)
   sse.stop()
 })
-
 </script>
 
 <style scoped>

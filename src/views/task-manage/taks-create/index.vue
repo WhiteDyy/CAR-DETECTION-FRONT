@@ -1,72 +1,91 @@
 <template>
-  <n-layout>
-    <n-modal v-model:show="showInitialDialog" preset="card" title="新建线路" :style="{
-      width: '600px'
-    }" :header-style="{
-      backgroundColor: 'rgba(82, 207, 197, 0.2)',
-      border: '2px solid rgba(82, 207, 197, 1)',
-      borderTopLeftRadius: '16px',
-      borderTopRightRadius: '16px'
-    }" :content-style="{
-      backgroundColor: 'rgba(82, 207, 197, 0.2)',
-      border: '2px solid rgba(82, 207, 197, 1)',
-      borderBottomLeftRadius: '16px',
-      borderBottomRightRadius: '16px'
-    }">
-
-      <n-form label-placement="left" label-width="100px">
+  <NLayout>
+    <NModal
+      v-model:show="showInitialDialog" preset="card" title="新建线路" :style="{
+        width: '600px',
+      }" :header-style="{
+        backgroundColor: 'rgba(82, 207, 197, 0.2)',
+        border: '2px solid rgba(82, 207, 197, 1)',
+        borderTopLeftRadius: '16px',
+        borderTopRightRadius: '16px',
+      }" :content-style="{
+        backgroundColor: 'rgba(82, 207, 197, 0.2)',
+        border: '2px solid rgba(82, 207, 197, 1)',
+        borderBottomLeftRadius: '16px',
+        borderBottomRightRadius: '16px',
+      }"
+    >
+      <NForm label-placement="left" label-width="100px">
         <!-- 线路名称 -->
-        <n-form-item label="线路名称" style="margin-top: 30px;">
+        <NFormItem label="线路名称" style="margin-top: 30px;">
           <n-input v-model:value="routeForm.routeName" placeholder="请输入线路名称" :clearable="true" />
-        </n-form-item>
+        </NFormItem>
 
         <!-- 起始节点 -->
-        <n-form-item label="起始节点">
-          <n-select v-model:value="routeForm.startId" :options="nodeOptions" placeholder="选择起始节点" :clearable="true"
-            style="width: 200px;" />
-        </n-form-item>
+        <NFormItem label="起始节点">
+          <NSelect
+            v-model:value="routeForm.startId" :options="nodeOptions" placeholder="选择起始节点" :clearable="true"
+            style="width: 200px;"
+          />
+        </NFormItem>
 
         <!-- 终点节点 -->
-        <n-form-item label="终点节点">
-          <n-select v-model:value="routeForm.endId" :options="nodeOptions" placeholder="选择终点节点" :clearable="true"
-            style="width: 200px;" />
-        </n-form-item>
+        <NFormItem label="终点节点">
+          <NSelect
+            v-model:value="routeForm.endId" :options="nodeOptions" placeholder="选择终点节点" :clearable="true"
+            style="width: 200px;"
+          />
+        </NFormItem>
 
         <!-- 道岔数量 -->
-        <n-form-item label="道岔数量">
-          <n-select v-model:value="routeForm.branchCount" :options="branchCountOptions" placeholder="选择道岔数量"
-            :clearable="true" style="width: 200px;" />
-        </n-form-item>
+        <NFormItem label="道岔数量">
+          <NSelect
+            v-model:value="routeForm.branchCount" :options="branchCountOptions" placeholder="选择道岔数量"
+            :clearable="true" style="width: 200px;"
+          />
+        </NFormItem>
 
-        <n-space justify="end" :style="{ 'margin-top': '24px' }">
-          <n-button @click="resetForm" class="custom-button">重置任务</n-button>
-          <n-button type="primary" @click="initRoute" class="custom-primary-button">确定</n-button>
-        </n-space>
-      </n-form>
-    </n-modal>
+        <NSpace justify="end" :style="{ 'margin-top': '24px' }">
+          <NButton class="custom-button" @click="resetForm">
+            重置任务
+          </NButton>
+          <NButton type="primary" class="custom-primary-button" @click="initRoute">
+            确定
+          </NButton>
+        </NSpace>
+      </NForm>
+    </NModal>
 
     <!-- 线路预览区域 -->
-    <n-layout-header bordered style="padding: 20px;">
-      <n-card :title="routeForm.routeName || '线路预览'">
-        <div class="preview-container" ref="container">
+    <NLayoutHeader bordered style="padding: 20px;">
+      <NCard :title="routeForm.routeName || '线路预览'">
+        <div ref="container" class="preview-container">
           <!-- 节点和连接线容器 -->
           <div class="node-container">
-            <div v-for="(node, index) in nodes" :key="index" :class="['node', node.type]"
-              :style="nodePositionStyle(node)">
+            <div
+              v-for="(node, index) in nodes" :key="index" class="node" :class="[node.type]"
+              :style="nodePositionStyle(node)"
+            >
               <div class="node-content">
-                <div class="node-label">{{ node.content }}</div>
-                <div class="node-info" v-if="node.type === 'main'">
+                <div class="node-label">
+                  {{ node.content }}
+                </div>
+                <div v-if="node.type === 'main'" class="node-info">
                   里程: {{ node.mileage }}
                 </div>
 
                 <!-- 修改道岔配置区域，同时显示label和turnoutName -->
-                <div class="turnout-config" v-if="node.type === 'branch'">
-                  <n-select v-model:value="node.direction" :options="directionOptions" placeholder="选择型号" size="small"
-                    style="margin-bottom: 5px; width: 100%;" />
-                  <n-select v-model:value="node.trackDirection" :options="trackDirectionOptions" placeholder="选择轨向"
-                    size="small" style="width: 100%;" />
+                <div v-if="node.type === 'branch'" class="turnout-config">
+                  <NSelect
+                    v-model:value="node.direction" :options="directionOptions" placeholder="选择型号" size="small"
+                    style="margin-bottom: 5px; width: 100%;"
+                  />
+                  <NSelect
+                    v-model:value="node.trackDirection" :options="trackDirectionOptions" placeholder="选择轨向"
+                    size="small" style="width: 100%;"
+                  />
                   <!-- 新增显示turnoutName -->
-                  <div class="turnout-name" v-if="node.direction">
+                  <div v-if="node.direction" class="turnout-name">
                     {{ getTurnoutName(node.direction) }}
                   </div>
                 </div>
@@ -75,42 +94,48 @@
 
             <!-- 连接线 -->
             <svg class="connections" width="100%" height="100%">
-              <path v-for="(path, index) in connectionPaths" :key="`path-${index}`" :d="path.d" fill="none"
-                stroke="white" stroke-width="2" /> <!-- 修改为白色线条，移除箭头 -->
+              <path
+                v-for="(path, index) in connectionPaths" :key="`path-${index}`" :d="path.d" fill="none"
+                stroke="white" stroke-width="2"
+              /> <!-- 修改为白色线条，移除箭头 -->
 
               <!-- 移除箭头标记，因为不再需要 -->
             </svg>
           </div>
         </div>
-      </n-card>
-    </n-layout-header>
+      </NCard>
+    </NLayoutHeader>
 
-    <n-layout-footer bordered style="padding: 20px;">
-      <n-space justify="end">
-        <n-button @click="resetForm">重置任务</n-button>
-        <n-button type="primary" @click="saveToLocal">保存任务</n-button>
-      </n-space>
-    </n-layout-footer>
-  </n-layout>
+    <NLayoutFooter bordered style="padding: 20px;">
+      <NSpace justify="end">
+        <NButton @click="resetForm">
+          重置任务
+        </NButton>
+        <NButton type="primary" @click="saveToLocal">
+          保存任务
+        </NButton>
+      </NSpace>
+    </NLayoutFooter>
+  </NLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import {
-  NLayout,
-  NLayoutHeader,
-  NLayoutFooter,
+  NButton,
   NCard,
   NForm,
   NFormItem,
-  NButton,
+  NLayout,
+  NLayoutFooter,
+  NLayoutHeader,
+  NModal,
   NSelect,
   NSpace,
-  NModal
-} from 'naive-ui';
+} from 'naive-ui'
+import { nextTick, onMounted, ref } from 'vue'
 
 // 控制初始弹框显示
-const showInitialDialog = ref(true);
+const showInitialDialog = ref(true)
 
 // 线路表单数据
 const routeForm = ref({
@@ -118,11 +143,11 @@ const routeForm = ref({
   startId: null,
   endId: null,
   branchCount: 0,
-});
+})
 
-const nodes = ref([]);
-const container = ref(null);
-const connectionPaths = ref([]);
+const nodes = ref([])
+const container = ref(null)
+const connectionPaths = ref([])
 
 // 选项数据
 const nodeOptions = [
@@ -130,7 +155,7 @@ const nodeOptions = [
   { label: '站点B', value: 'B' },
   { label: '站点C', value: 'C' },
   { label: '站点D', value: 'D' },
-];
+]
 const branchCountOptions = [
   { label: '0', value: 0 },
   { label: '1', value: 1 },
@@ -141,95 +166,98 @@ const branchCountOptions = [
   { label: '10', value: 10 },
   { label: '15', value: 15 },
   { label: '21', value: 21 },
-];
+]
 const directionOptions = [
   { label: '1号道岔', value: 'turnout1', turnoutName: 'SC330 道岔' },
   { label: '2号道岔', value: 'turnout2', turnoutName: 'CZ577 道岔' },
   { label: '3号道岔', value: 'turnout3', turnoutName: '专线4257 道岔' },
   { label: '4号道岔', value: 'turnout4', turnoutName: 'SC340 渡线' },
-];
+]
 const trackDirectionOptions = [
   { label: 'A股', value: 'A' },
   { label: 'B股', value: 'B' },
-];
+]
 
 // 获取道岔名称
-const getTurnoutName = (type) => {
-  if (!type) return '';
-  const option = directionOptions.find(opt => opt.value === type);
-  return option ? option.turnoutName : '';
-};
+function getTurnoutName(type) {
+  if (!type)
+    return ''
+  const option = directionOptions.find(opt => opt.value === type)
+  return option ? option.turnoutName : ''
+}
 
 // 初始化线路
-const initRoute = () => {
+function initRoute() {
   if (!routeForm.value.routeName) {
-    window.$message?.error('请输入线路名称');
-    return;
+    window.$message?.error('请输入线路名称')
+    return
   }
 
   if (!routeForm.value.startId) {
-    window.$message?.error('请选择起始节点');
-    return;
+    window.$message?.error('请选择起始节点')
+    return
   }
 
   if (!routeForm.value.endId) {
-    window.$message?.error('请选择终点节点');
-    return;
+    window.$message?.error('请选择终点节点')
+    return
   }
 
-  showInitialDialog.value = false;
-  generateRoute();
-};
+  showInitialDialog.value = false
+  generateRoute()
+}
 
 // 计算节点位置样式
-const nodePositionStyle = (node) => {
+function nodePositionStyle(node) {
   return {
     left: `${node.position.x}px`,
     top: `${node.position.y}px`,
-  };
-};
+  }
+}
 
 // 生成线路图
-const generateRoute = () => {
-  nodes.value = [];
-  connectionPaths.value = [];
+function generateRoute() {
+  nodes.value = []
+  connectionPaths.value = []
 
-  const { startId, endId, branchCount } = routeForm.value;
+  const { startId, endId, branchCount } = routeForm.value
 
-  if (!startId || !endId) return;
+  if (!startId || !endId)
+    return
 
-  const totalNodes = branchCount + 2;
-  const nodesPerRow = 4;
-  const rowCount = Math.ceil(totalNodes / nodesPerRow);
+  const totalNodes = branchCount + 2
+  const nodesPerRow = 4
+  const rowCount = Math.ceil(totalNodes / nodesPerRow)
 
   // 节点布局参数
-  const containerWidth = container.value ? container.value.offsetWidth : 800;
-  const nodeWidth = 150; // 增加宽度以容纳配置选项
-  const nodeHeight = branchCount > 0 ? 120 : 80; // 道岔节点更高
-  const horizontalSpacing = (containerWidth - nodeWidth * Math.min(totalNodes, nodesPerRow)) / (Math.min(totalNodes, nodesPerRow) + 1);
-  const verticalSpacing = 120;
+  const containerWidth = container.value ? container.value.offsetWidth : 800
+  const nodeWidth = 150 // 增加宽度以容纳配置选项
+  const nodeHeight = branchCount > 0 ? 120 : 80 // 道岔节点更高
+  const horizontalSpacing = (containerWidth - nodeWidth * Math.min(totalNodes, nodesPerRow)) / (Math.min(totalNodes, nodesPerRow) + 1)
+  const verticalSpacing = 120
 
   // 生成节点并计算位置
   for (let i = 0; i < totalNodes; i++) {
-    const row = Math.floor(i / nodesPerRow);
-    const col = i % nodesPerRow;
+    const row = Math.floor(i / nodesPerRow)
+    const col = i % nodesPerRow
 
     // 处理换行时的列号（蛇形排列）
-    let effectiveCol;
+    let effectiveCol
     if (row % 2 === 0) {
       // 偶数行从左到右
-      effectiveCol = col;
-    } else {
+      effectiveCol = col
+    }
+    else {
       // 奇数行从右到左
-      effectiveCol = nodesPerRow - col - 1;
+      effectiveCol = nodesPerRow - col - 1
     }
 
     // 节点位置计算
-    let x = horizontalSpacing + effectiveCol * (nodeWidth + horizontalSpacing);
-    let y = 30 + row * (nodeHeight + verticalSpacing);
+    const x = horizontalSpacing + effectiveCol * (nodeWidth + horizontalSpacing)
+    const y = 30 + row * (nodeHeight + verticalSpacing)
 
     // 创建节点
-    let node;
+    let node
     if (i === 0) {
       // 起点节点
       node = {
@@ -237,18 +265,20 @@ const generateRoute = () => {
         content: `站点${startId}`,
         type: 'main',
         mileage: '0',
-        position: { x, y }
-      };
-    } else if (i === totalNodes - 1) {
+        position: { x, y },
+      }
+    }
+    else if (i === totalNodes - 1) {
       // 终点节点
       node = {
         id: i,
         content: `站点${endId}`,
         type: 'main',
         mileage: `${(i * 100).toFixed(1)}`,
-        position: { x, y }
-      };
-    } else {
+        position: { x, y },
+      }
+    }
+    else {
       // 道岔节点
       node = {
         id: i,
@@ -256,86 +286,85 @@ const generateRoute = () => {
         type: 'branch',
         direction: null,
         trackDirection: 'A', // 默认A股
-        position: { x, y }
-      };
+        position: { x, y },
+      }
     }
-    nodes.value.push(node);
+    nodes.value.push(node)
   }
 
   // 生成连接线路径
-  generateConnectionPaths(rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing);
-};
+  generateConnectionPaths(rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing)
+}
 
 // 生成连接线路径 - 修改为白色线条且不带箭头
-const generateConnectionPaths = (rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing) => {
-  const paths = [];
+function generateConnectionPaths(rowCount, nodesPerRow, nodeWidth, nodeHeight, horizontalSpacing, verticalSpacing) {
+  const paths = []
 
   for (let i = 0; i < nodes.value.length - 1; i++) {
-    const currentNode = nodes.value[i];
-    const nextNode = nodes.value[i + 1];
+    const currentNode = nodes.value[i]
+    const nextNode = nodes.value[i + 1]
 
-    const startX = currentNode.position.x + nodeWidth/2;
-    const startY = currentNode.position.y + nodeHeight;
-    const endX = nextNode.position.x + nodeWidth/2;
-    const endY = nextNode.position.y+nodeHeight;
+    const startX = currentNode.position.x + nodeWidth / 2
+    const startY = currentNode.position.y + nodeHeight
+    const endX = nextNode.position.x + nodeWidth / 2
+    const endY = nextNode.position.y + nodeHeight
     // console.log(i,'：(',startX,',',startY,')-->(',endX,',',endY,')');
-    
 
     // 简单直线连接，不带箭头
     paths.push({
-      d: `M ${startX} ${startY} L ${endX} ${endY}`
-    });
+      d: `M ${startX} ${startY} L ${endX} ${endY}`,
+    })
   }
 
-  connectionPaths.value = paths;
-};
+  connectionPaths.value = paths
+}
 // 保存到本地
-const saveToLocal = () => {
+function saveToLocal() {
   const data = {
     nodes: nodes.value,
     routeForm: routeForm.value,
-  };
-  localStorage.setItem('routeData', JSON.stringify(data));
-  window.$message?.success('线路图已保存到本地');
-};
+  }
+  localStorage.setItem('routeData', JSON.stringify(data))
+  window.$message?.success('线路图已保存到本地')
+}
 
 // 读取本地数据
-const loadFromLocal = () => {
-  const savedData = localStorage.getItem('routeData');
+function loadFromLocal() {
+  const savedData = localStorage.getItem('routeData')
   if (savedData) {
-    const data = JSON.parse(savedData);
-    routeForm.value = data.routeForm;
-    nodes.value = data.nodes;
+    const data = JSON.parse(savedData)
+    routeForm.value = data.routeForm
+    nodes.value = data.nodes
 
     if (data.nodes.length > 0) {
-      showInitialDialog.value = false;
+      showInitialDialog.value = false
     }
   }
-};
+}
 
 // 重置表单
-const resetForm = () => {
+function resetForm() {
   routeForm.value = {
     routeName: '',
     startId: null,
     endId: null,
     branchCount: 0,
-  };
+  }
 
-  nodes.value = [];
-  connectionPaths.value = [];
-  showInitialDialog.value = true;
-};
+  nodes.value = []
+  connectionPaths.value = []
+  showInitialDialog.value = true
+}
 
 // 生命周期钩子
 onMounted(() => {
-  loadFromLocal();
+  loadFromLocal()
   nextTick(() => {
     if (nodes.value.length > 0) {
-      generateRoute();
+      generateRoute()
     }
-  });
-});
+  })
+})
 </script>
 
 <style scoped>

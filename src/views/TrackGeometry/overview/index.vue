@@ -1,63 +1,74 @@
 <template>
-    <AppPage>
-        <n-card>
-            <template #header>
-                <div class="track-info-container">
-                    <n-card size="small" class="track-info-card">
-                        <div class="track-info">
-                            <div class="info-item">
-                                <span class="info-label">线路类型:</span>
-                                <n-tag type="success" size="medium">{{ trackType }}</n-tag>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">线路名称:</span>
-                                <n-tag type="info" size="medium">{{ trackModel }}</n-tag>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">行别:</span>
-                                <n-tag type="warning" size="medium">{{ trackDirection }}</n-tag>
-                            </div>
+  <AppPage>
+    <n-card>
+      <template #header>
+        <div class="track-info-container">
+          <n-card size="small" class="track-info-card">
+            <div class="track-info">
+              <div class="info-item">
+                <span class="info-label">线路类型:</span>
+                <n-tag type="success" size="medium">
+                  {{ trackType }}
+                </n-tag>
+              </div>
+              <div class="info-item">
+                <span class="info-label">线路名称:</span>
+                <n-tag type="info" size="medium">
+                  {{ trackModel }}
+                </n-tag>
+              </div>
+              <div class="info-item">
+                <span class="info-label">行别:</span>
+                <n-tag type="warning" size="medium">
+                  {{ trackDirection }}
+                </n-tag>
+              </div>
 
-                            <!-- 添加结束作业按钮 -->
-                            <div class="action-item">
-                                <n-button type="error" size="medium" :loading="endingJob" @click="handleEndJob">
-                                    结束作业
-                                </n-button>
-                            </div>
-                        </div>
-                    </n-card>
-                </div>
-            </template>
-
-            <div v-show="currentTab === 'main'">
-                <n-layout has-sider>
-                    <n-layout-sider content-style="padding: 5px;" width="100px">
-                        <div class="sider-content">
-                            <n-button v-for="parameter in parameterList" :key="parameter" :bordered="false"
-                                style="width: 80px;">
-                                {{ parameter }}
-                            </n-button>
-                        </div>
-                    </n-layout-sider>
-                    <n-layout>
-                        <n-layout-content content-style="padding: 5px;">
-                            <TrendChart :data="chartData" :parameters="parameterList" :color-map="colorMap"
-                                :x-axis-data="xAxisData" :tag-positions="tagPositions" :not-merge="true"
-                                :sleeper-positions="sleeperPositions" />
-                        </n-layout-content>
-                    </n-layout>
-                </n-layout>
+              <!-- 添加结束作业按钮 -->
+              <div class="action-item">
+                <n-button type="error" size="medium" :loading="endingJob" @click="handleEndJob">
+                  结束作业
+                </n-button>
+              </div>
             </div>
-        </n-card>
-    </AppPage>
+          </n-card>
+        </div>
+      </template>
+
+      <div v-show="currentTab === 'main'">
+        <n-layout has-sider>
+          <n-layout-sider content-style="padding: 5px;" width="100px">
+            <div class="sider-content">
+              <n-button
+                v-for="parameter in parameterList" :key="parameter" :bordered="false"
+                style="width: 80px;"
+              >
+                {{ parameter }}
+              </n-button>
+            </div>
+          </n-layout-sider>
+          <n-layout>
+            <n-layout-content content-style="padding: 5px;">
+              <TrendChart
+                :data="chartData" :parameters="parameterList" :color-map="colorMap"
+                :x-axis-data="xAxisData" :tag-positions="tagPositions" :not-merge="true"
+                :sleeper-positions="sleeperPositions"
+              />
+            </n-layout-content>
+          </n-layout>
+        </n-layout>
+      </div>
+    </n-card>
+  </AppPage>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import TrendChart from './trendChart.vue'
-import SSEService from '@/utils/sse/sseService';
-import api from './api'
 import { useTaskStore } from '@/store'
+import SSEService from '@/utils/sse/sseService'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import api from './api'
+import TrendChart from './trendChart.vue'
 // tab切换状态
 const currentTab = ref('main')
 
@@ -68,38 +79,57 @@ const trackDirection = ref('上行')
 
 // 参数列表
 const parameterList = ref([
-    '轨距', '轨距变化率', '左高低', '右高低', '左轨向', '右轨向',
-    '水平', '三角坑', '垂直磨耗', '侧面磨耗',
+  '轨距',
+  '轨距变化率',
+  '左高低',
+  '右高低',
+  '左轨向',
+  '右轨向',
+  '水平',
+  '三角坑',
+  '垂直磨耗',
+  '侧面磨耗',
 ])
 
 // 颜色映射
 const colorMap = {
-    轨距: '#ff7f0e', 轨距变化率: '#ff7f0e', 左高低: '#1f77b4',
-    右高低: '#1f77b4', 左轨向: '#2ca02c', 右轨向: '#2ca02c',
-    水平: '#d62728', 三角坑: '#9467bd', 垂直磨耗: '#8c564b',
-    侧面磨耗: '#8c564b',
+  轨距: '#ff7f0e',
+  轨距变化率: '#ff7f0e',
+  左高低: '#1f77b4',
+  右高低: '#1f77b4',
+  左轨向: '#2ca02c',
+  右轨向: '#2ca02c',
+  水平: '#d62728',
+  三角坑: '#9467bd',
+  垂直磨耗: '#8c564b',
+  侧面磨耗: '#8c564b',
 }
 
 // 图表核心数据
 const xAxisData = ref([])
 const chartData = ref({
-    轨距: [], 轨距变化率: [], 左高低: [], 右高低: [], 左轨向: [],
-    右轨向: [], 水平: [], 三角坑: [], 垂直磨耗: [], 侧面磨耗: [],
+  轨距: [],
+  轨距变化率: [],
+  左高低: [],
+  右高低: [],
+  左轨向: [],
+  右轨向: [],
+  水平: [],
+  三角坑: [],
+  垂直磨耗: [],
+  侧面磨耗: [],
 })
 const tagPositions = ref([])
 const sleeperPositions = ref([])
-
-
 
 // 计数器与里程状态
 
 // let intervalId
 
-
 // let currentMileageInDecimeters = 0
 // let tagCounter = 1
 // let sleeperDisplayCounter = 1; // 用于显示的、会重置的序号
-let sleeperUniqueCounter = 1;  // 用于内部的、永不重置的唯一ID
+let sleeperUniqueCounter = 1 // 用于内部的、永不重置的唯一ID
 
 /**
  * 更新所有图表数据，并维持滑动窗口
@@ -108,49 +138,46 @@ let sleeperUniqueCounter = 1;  // 用于内部的、永不重置的唯一ID
  * @param {object|null} newSleeper - 当前时刻可能生成的新轨枕
  */
 function updateChartData(newData, newTag, newSleeper) {
-    const maxDataPoints = 100
+  const maxDataPoints = 100
 
-    // 1. 推入新数据
-    xAxisData.value.push(newData.mileage)
+  // 1. 推入新数据
+  xAxisData.value.push(newData.mileage)
+  for (const param of parameterList.value) {
+    // 在父组件中，应使用原始的 parameterList 值作为 key
+    chartData.value[param].push(newData[param] || null)
+  }
+  if (newTag) {
+    tagPositions.value.push(newTag)
+  }
+  if (newSleeper) {
+    sleeperPositions.value.push(newSleeper)
+  }
+
+  // 2. 维持窗口大小，当数据超出最大点数时，从左侧移出旧数据
+  if (xAxisData.value.length > maxDataPoints) {
+    xAxisData.value.shift()
     for (const param of parameterList.value) {
-        // 在父组件中，应使用原始的 parameterList 值作为 key
-        chartData.value[param].push(newData[param] || null)
-    }
-    if (newTag) {
-        tagPositions.value.push(newTag)
-    }
-    if (newSleeper) {
-        sleeperPositions.value.push(newSleeper)
+      chartData.value[param].shift()
     }
 
-    // 2. 维持窗口大小，当数据超出最大点数时，从左侧移出旧数据
-    if (xAxisData.value.length > maxDataPoints) {
-        xAxisData.value.shift()
-        for (const param of parameterList.value) {
-            chartData.value[param].shift()
-        }
+    const visibleStartMileage = xAxisData.value[0]
 
-        const visibleStartMileage = xAxisData.value[0]
-
-        // --- START: FIX #1 ---
-        // **【修复1】** 使用 while 循环替代 if，确保清理所有滑出范围的标记点
-        while (tagPositions.value.length > 0 && tagPositions.value[0].mileage < visibleStartMileage) {
-            tagPositions.value.shift()
-        }
-        while (sleeperPositions.value.length > 0 && sleeperPositions.value[0].mileage < visibleStartMileage) {
-            sleeperPositions.value.shift()
-        }
-        // --- END: FIX #1 ---
+    // --- START: FIX #1 ---
+    // **【修复1】** 使用 while 循环替代 if，确保清理所有滑出范围的标记点
+    while (tagPositions.value.length > 0 && tagPositions.value[0].mileage < visibleStartMileage) {
+      tagPositions.value.shift()
     }
+    while (sleeperPositions.value.length > 0 && sleeperPositions.value[0].mileage < visibleStartMileage) {
+      sleeperPositions.value.shift()
+    }
+    // --- END: FIX #1 ---
+  }
 }
 
-
 // --- SSE 连接与数据处理 ---
-const sseUrl = '/api/geometry/live';
+const sseUrl = '/api/geometry/live'
 // 2. 【实例化】创建SSE服务实例，指向您的新接口
-const sse = new SSEService(sseUrl);
-
-
+const sse = new SSEService(sseUrl)
 
 /**
  * 3. 【定义】处理从SSE接收到的每一条消息
@@ -184,104 +211,102 @@ const sse = new SSEService(sseUrl);
 //     // 调用已有的函数来更新图表状态，这里什么都不用改
 //     updateChartData(newData, newTag, newSleeper);
 // };
-const handleSseMessage = (point) => {
-    // 将后端数据格式转换为前端需要的格式
-    const newData = {
-        mileage: point.sensorData.mileage,
-        轨距: point.tdf01Gauge,
-        轨距变化率: 0, // 实际数据中没有这个字段，可能需要计算或设为0
-        左高低: point.lsf01Level ? point.lsf01Level[0] : 0,
-        右高低: point.lsf01Level ? point.lsf01Level[1] : 0,
-        左轨向: 0, // 实际数据中没有这个字段
-        右轨向: 0, // 实际数据中没有这个字段
-        水平: point.sensorData.dipmeter,
-        三角坑: 0, // 实际数据中没有这个字段
-        垂直磨耗: 0, // 实际数据中没有这个字段
-        侧面磨耗: 0, // 实际数据中没有这个字段
-    };
-    console.warn('Received SSE data:', newData);
+function handleSseMessage(point) {
+  // 将后端数据格式转换为前端需要的格式
+  const newData = {
+    mileage: point.sensorData.mileage,
+    轨距: point.tdf01Gauge,
+    轨距变化率: 0, // 实际数据中没有这个字段，可能需要计算或设为0
+    左高低: point.lsf01Level ? point.lsf01Level[0] : 0,
+    右高低: point.lsf01Level ? point.lsf01Level[1] : 0,
+    左轨向: 0, // 实际数据中没有这个字段
+    右轨向: 0, // 实际数据中没有这个字段
+    水平: point.sensorData.dipmeter,
+    三角坑: 0, // 实际数据中没有这个字段
+    垂直磨耗: 0, // 实际数据中没有这个字段
+    侧面磨耗: 0, // 实际数据中没有这个字段
+  }
+  console.warn('Received SSE data:', newData)
 
-    let newTag = null;
-    // 根据实际数据结构判断是否有标签信息
-    if (point.sensorData.codee40) {
-        newTag = {
-            mileage: point.sensorData.mileage,
-            id: point.sensorData.codee40,
-        };
+  let newTag = null
+  // 根据实际数据结构判断是否有标签信息
+  if (point.sensorData.codee40) {
+    newTag = {
+      mileage: point.sensorData.mileage,
+      id: point.sensorData.codee40,
     }
+  }
 
-    let newSleeper = null;
-    // 根据实际数据结构判断是否有轨枕信息
-    if (point.sensorData.sleeper) {
-        newSleeper = {
-            mileage: point.sensorData.mileage,
-            displayId: point.sensorData.sleeper,
-            uniqueId: `sleeper-${sleeperUniqueCounter++}`, // 前端维护唯一ID
-        };
+  let newSleeper = null
+  // 根据实际数据结构判断是否有轨枕信息
+  if (point.sensorData.sleeper) {
+    newSleeper = {
+      mileage: point.sensorData.mileage,
+      displayId: point.sensorData.sleeper,
+      uniqueId: `sleeper-${sleeperUniqueCounter++}`, // 前端维护唯一ID
     }
+  }
 
-    // 调用已有的函数来更新图表状态
-    updateChartData(newData, newTag, newSleeper);
-};
-import { useRouter } from 'vue-router';
-const router = useRouter();
+  // 调用已有的函数来更新图表状态
+  updateChartData(newData, newTag, newSleeper)
+}
+const router = useRouter()
 const endingJob = ref(false)
-const handleEndJob = async () => {
-    const taskStore = useTaskStore()
+async function handleEndJob() {
+  const taskStore = useTaskStore()
 
-    endingJob.value = true;
-    try {
-        // 1. 从Pinia获取当前任务
-        const currentTask = taskStore.getCurrentTask()
-        if (!currentTask) {
-            throw new Error('没有找到进行中的任务')
-        }
-        // 调用结束作业API
-        const response = await api.stopCurrentJob(currentTask);
-        if (response.code !== 0) {
-            throw new Error('结束作业失败: ' + response.message);
-        } else {
-            // 2. 清除当前任务状态
-            taskStore.clearCurrentTask();
-            $message.success('作业已成功结束');
-            router.push('/taskmanage/task-list')
-        }
-
-        // 这里可以添加结束后的其他逻辑，如刷新数据等
-    } catch (error) {
-        $message.error('结束作业失败: ' + error.message);
-    } finally {
-        endingJob.value = false;
+  endingJob.value = true
+  try {
+    // 1. 从Pinia获取当前任务
+    const currentTask = taskStore.getCurrentTask()
+    if (!currentTask) {
+      throw new Error('没有找到进行中的任务')
     }
-};
+    // 调用结束作业API
+    const response = await api.stopCurrentJob(currentTask)
+    if (response.code !== 0) {
+      throw new Error(`结束作业失败: ${response.message}`)
+    }
+    else {
+      // 2. 清除当前任务状态
+      taskStore.clearCurrentTask()
+      $message.success('作业已成功结束')
+      router.push('/taskmanage/task-list')
+    }
 
+    // 这里可以添加结束后的其他逻辑，如刷新数据等
+  }
+  catch (error) {
+    $message.error(`结束作业失败: ${error.message}`)
+  }
+  finally {
+    endingJob.value = false
+  }
+}
 
 // --- 组件生命周期 ---
 
 onMounted(() => {
-    // 4. 【挂载】在组件挂载后，开始监听SSE事件并启动连接
-    console.warn('Connecting to SSE endpoint: /geometry/live');
+  // 4. 【挂载】在组件挂载后，开始监听SSE事件并启动连接
+  console.warn('Connecting to SSE endpoint: /geometry/live')
 
-    // 监听名为 "geometry-data" 的事件 (与后端控制器中定义的事件名一致)
-    sse.addEventListener('geometry-data', handleSseMessage);
+  // 监听名为 "geometry-data" 的事件 (与后端控制器中定义的事件名一致)
+  sse.addEventListener('geometry-data', handleSseMessage)
 
-    // (可选) 监听连接成功的事件，方便调试
-    sse.addEventListener('connected', (event) => {
-        console.warn('SSE connection successful:', event.data);
-    });
+  // (可选) 监听连接成功的事件，方便调试
+  sse.addEventListener('connected', (event) => {
+    console.warn('SSE connection successful:', event.data)
+  })
 
-    sse.start();
-});
+  sse.start()
+})
 
 onUnmounted(() => {
-    // 5. 【卸载】在组件销毁时，停止SSE服务并移除监听器，防止内存泄漏
-    console.warn('Disconnecting from SSE endpoint.');
-    sse.removeEventListener('geometry-data', handleSseMessage);
-    sse.stop();
-});
-
-
-
+  // 5. 【卸载】在组件销毁时，停止SSE服务并移除监听器，防止内存泄漏
+  console.warn('Disconnecting from SSE endpoint.')
+  sse.removeEventListener('geometry-data', handleSseMessage)
+  sse.stop()
+})
 
 /**
  * 生成当前时刻的数据点
@@ -329,7 +354,6 @@ onUnmounted(() => {
 //     currentMileageInDecimeters += 1
 // }
 
-
 // onMounted(() => {
 //     // 注意定时器速度调整为100ms，以匹配0.1米的步进单位
 //     intervalId = setInterval(generateDataPoint, 1000)
@@ -342,46 +366,46 @@ onUnmounted(() => {
 
 <style scoped>
 .sider-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 820px;
-    padding-top: 42px;
-    padding-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 820px;
+  padding-top: 42px;
+  padding-bottom: 14px;
 }
 
 /* Styles below were not used by active elements and are kept for reference if needed */
 .custom-title {
-    font-size: 20px;
-    font-weight: bold;
-    text-align: center;
-    padding: 0px 0px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding: 0px 0px;
 }
 
 .track-info-container {
-    margin-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .track-info-card {
-    background-color: #f9f9f9;
-    border-radius: 8px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
 .track-info {
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-    padding: 4px 0;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 4px 0;
 }
 
 .info-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .info-label {
-    font-weight: 500;
-    color: #666;
+  font-weight: 500;
+  color: #666;
 }
 </style>

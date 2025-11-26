@@ -15,6 +15,7 @@ import "echarts/lib/component/grid";
 import "echarts/lib/component/legend";
 
 // 修复导入路径
+import { markRaw } from 'vue';
 import chartResize from "../../mixins/chart-resize";
 export default {
   name: "barChart",
@@ -70,7 +71,7 @@ export default {
   },
   methods: {
     initChart() {
-      this.chart = echarts.init(this.$el);
+      this.chart = markRaw(echarts.init(this.$el));
       this.setOptions(this.chartData);
     },
     setOptions({ days, data1, data2 } = {}) {

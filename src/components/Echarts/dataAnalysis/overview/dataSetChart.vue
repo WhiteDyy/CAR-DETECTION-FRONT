@@ -14,6 +14,7 @@ import "echarts/lib/component/dataset";
 import "echarts/lib/component/grid";
 import "echarts/lib/component/legend";
 
+import { markRaw } from 'vue';
 import chartResize from "../../mixins/chart-resize";
 export default {
   name: "dataSet",
@@ -69,7 +70,7 @@ export default {
   },
   methods: {
     initChart() {
-      this.chart = echarts.init(this.$el);
+      this.chart = markRaw(echarts.init(this.$el));
       this.setOptions(this.chartData);
     },
     setOptions({ days, data1, data2 } = {}) {

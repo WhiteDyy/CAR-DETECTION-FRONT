@@ -1,46 +1,49 @@
 <template>
   <div>
-    <route-monitor :route-data="routeData" :current-mileage="currentMileage" />
+    <RouteMonitor :route-data="routeData" :current-mileage="currentMileage" />
     <!-- 控制里程的示例 -->
-    <n-button @click="increaseMileage">增加里程</n-button>
+    <n-button @click="increaseMileage">
+      增加里程
+    </n-button>
     <n-slider v-model:value="currentMileage" :min="0" :max="maxMileage" :step="1" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import RouteMonitor from './RouteMonitor.vue';
+import { onMounted, ref } from 'vue'
+import RouteMonitor from './RouteMonitor.vue'
 
 const routeData = ref({
   nodes: [],
-  connections: []
-});
-const currentMileage = ref(0);
-const maxMileage = ref(0);
+  connections: [],
+})
+const currentMileage = ref(0)
+const maxMileage = ref(0)
 
 // 从本地加载数据
-const loadFromLocal = () => {
-  const savedData = localStorage.getItem('routeData');
+function loadFromLocal() {
+  const savedData = localStorage.getItem('routeData')
   if (savedData) {
-    const data = JSON.parse(savedData);
+    const data = JSON.parse(savedData)
     routeData.value = {
       nodes: data.nodes,
-      connections: data.connections
-    };
+      connections: data.connections,
+    }
     // 计算最大里程
-    maxMileage.value = Math.max(...data.nodes.map(node => Number(node.mileage)));
+    maxMileage.value = Math.max(...data.nodes.map(node => Number(node.mileage)))
   }
-};
+}
 
-const increaseMileage = () => {
+function increaseMileage() {
   if (currentMileage.value < maxMileage.value) {
-    currentMileage.value += 0.1;
-  } else {
-    currentMileage.value = 0; // 重置
+    currentMileage.value += 0.1
   }
-};
+  else {
+    currentMileage.value = 0 // 重置
+  }
+}
 
 onMounted(() => {
-  loadFromLocal();
-});
+  loadFromLocal()
+})
 </script>

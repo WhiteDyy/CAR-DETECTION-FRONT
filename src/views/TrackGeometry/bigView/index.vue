@@ -1,12 +1,10 @@
 <!-- 主组件 -->
 <template>
   <AppPage>
-
     <n-layout has-sider class="full-layout">
       <!-- 左侧 20% -->
 
       <n-layout-sider width="30%" content-style="padding: 5px;">
-
         <div class="card-container">
           <!-- 第一列 -->
           <div class="card-table">
@@ -57,7 +55,6 @@
 
       <!-- 右侧 80% -->
       <n-layout class="right-container">
-
         <!-- 右侧上部 40% -->
         <n-layout-content content-style="padding: 5px;" class="upper-section">
           <div class="card-content">
@@ -84,28 +81,46 @@
           <div class="chart-container">
             <!-- 9个折线图，按照 3x3 布局 -->
             <div class="chart-row">
-              <TrendChart :data="switchChartData" parameter="左高低" :color="colorMap['左高低']"
-                :x-axis-data="switchXAxisData" title="左高低趋势" />
-              <TrendChart :data="switchChartData" parameter="右高低" :color="colorMap['右高低']"
-                :x-axis-data="switchXAxisData" title="右高低趋势" />
-              <TrendChart :data="switchChartData" parameter="左轨向" :color="colorMap['左轨向']"
-                :x-axis-data="switchXAxisData" title="左轨向趋势" />
+              <TrendChart
+                :data="switchChartData" parameter="左高低" :color="colorMap['左高低']"
+                :x-axis-data="switchXAxisData" title="左高低趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="右高低" :color="colorMap['右高低']"
+                :x-axis-data="switchXAxisData" title="右高低趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="左轨向" :color="colorMap['左轨向']"
+                :x-axis-data="switchXAxisData" title="左轨向趋势"
+              />
             </div>
             <div class="chart-row">
-              <TrendChart :data="switchChartData" parameter="右轨向" :color="colorMap['右轨向']"
-                :x-axis-data="switchXAxisData" title="右轨向趋势" />
-              <TrendChart :data="switchChartData" parameter="垂直磨耗" :color="colorMap['垂直磨耗']"
-                :x-axis-data="switchXAxisData" title="垂直磨耗趋势" />
-              <TrendChart :data="switchChartData" parameter="侧面磨耗" :color="colorMap['侧面磨耗']"
-                :x-axis-data="switchXAxisData" title="侧面磨耗趋势" />
+              <TrendChart
+                :data="switchChartData" parameter="右轨向" :color="colorMap['右轨向']"
+                :x-axis-data="switchXAxisData" title="右轨向趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="垂直磨耗" :color="colorMap['垂直磨耗']"
+                :x-axis-data="switchXAxisData" title="垂直磨耗趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="侧面磨耗" :color="colorMap['侧面磨耗']"
+                :x-axis-data="switchXAxisData" title="侧面磨耗趋势"
+              />
             </div>
             <div class="chart-row">
-              <TrendChart :data="switchChartData" parameter="轨距" :color="colorMap['轨距']" :x-axis-data="switchXAxisData"
-                title="轨距趋势" />
-              <TrendChart :data="switchChartData" parameter="扭曲" :color="colorMap['扭曲']" :x-axis-data="switchXAxisData"
-                title="扭曲趋势" />
-              <TrendChart :data="switchChartData" parameter="曲线正矢" :color="colorMap['曲线正矢']"
-                :x-axis-data="switchXAxisData" title="曲线正矢趋势" />
+              <TrendChart
+                :data="switchChartData" parameter="轨距" :color="colorMap['轨距']" :x-axis-data="switchXAxisData"
+                title="轨距趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="扭曲" :color="colorMap['扭曲']" :x-axis-data="switchXAxisData"
+                title="扭曲趋势"
+              />
+              <TrendChart
+                :data="switchChartData" parameter="曲线正矢" :color="colorMap['曲线正矢']"
+                :x-axis-data="switchXAxisData" title="曲线正矢趋势"
+              />
             </div>
           </div>
         </n-layout-content>
@@ -227,7 +242,7 @@ const switchChartData = ref({
   水平: [],
   三角坑: [],
   垂直磨耗: [],
-  侧面磨耗: []
+  侧面磨耗: [],
 })
 
 const colorMap = ref({

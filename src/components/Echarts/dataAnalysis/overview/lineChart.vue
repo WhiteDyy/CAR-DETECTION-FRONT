@@ -3,14 +3,19 @@
 </template>
 
 <script>
+// 按需引入 引入 ECharts 主模块
 import * as echarts from "echarts";
+// 引入柱状图
 import "echarts/lib/chart/line";
+// 引入提示框和标题组件
 import "echarts/lib/component/tooltip";
 import "echarts/lib/component/title";
-import "echarts/lib/component/legend";
 
+// 修复导入路径
 import chartResize from "../../mixins/chart-resize";
 
+
+import { markRaw } from 'vue';
 export default {
   name: "LineChart",
   mixins: [chartResize],
@@ -27,6 +32,7 @@ export default {
       type: String,
       default: "450px",
     },
+    // 父组件传递过来的图表数据
     chartData: {
       type: Object,
       required: false,
@@ -34,191 +40,146 @@ export default {
   },
   data() {
     return {
+      // Echarts实例
       chart: null,
-      currentOption: null
     };
   },
+
   watch: {
+    /* 如果图表数据是后台获取的，监听父组件中的数据变化，重新触发Echarts */
     chartData: {
       deep: true,
       handler(val) {
-        this.safeUpdateChart(val);
+        this.setOptions(val);
       },
     },
   },
   mounted() {
+    /* 图表初始化 */
     this.$nextTick(() => {
       this.initChart();
     });
   },
   beforeDestroy() {
-    this.destroyChart();
+    if (!this.chart) {
+      return;
+    }
+    /* 释放图表实例 */
+    this.chart.dispose();
+    /* dispose 会释放内部占用的一些资源和事件绑定，但是解除实例的引用我们是做不到的，所以需要重新赋值为null */
+    this.chart = null;
   },
   methods: {
     initChart() {
-      try {
-        // 确保DOM元素存在
-        if (!this.$el) {
-          setTimeout(() => this.initChart(), 100);
-          return;
-        }
-        
-        this.chart = echarts.init(this.$el);
-        console.log('LineChart initialized successfully');
-        
-        // 添加图例点击事件监听
-        this.chart.off('legendselectchanged');
-        this.chart.on('legendselectchanged', (params) => {
-          this.handleLegendSelect(params);
-        });
-        
-        this.setOptions();
-      } catch (e) {
-        console.error('Error initializing line chart:', e);
-        this.reinitWithDelay();
-      }
+      this.chart = markRaw(echarts.init(this.$el));
+      this.setOptions(this.chartData);
     },
-    
-    destroyChart() {
-      if (this.chart) {
-        try {
-          // 移除所有事件监听
-          this.chart.off('legendselectchanged');
-          this.chart.dispose();
-        } catch (e) {
-          console.warn('Error disposing line chart:', e);
-        }
-        this.chart = null;
-      }
-    },
-    
-    reinitWithDelay() {
-      setTimeout(() => {
-        this.reinitChart();
-      }, 1000);
-    },
-
     setOptions() {
-      this.safeChartUpdate(() => {
-        const option = this.getChartOption();
-        this.currentOption = option;
-        
-        this.chart.setOption(option, {
-          notMerge: false,
-          lazyUpdate: true
-        });
-      });
-    },
-    
-    safeUpdateChart(chartData) {
-      this.safeChartUpdate(() => {
-        const option = this.getChartOption(chartData);
-        this.currentOption = option;
-        
-        this.chart.setOption(option, {
-          notMerge: false,
-          lazyUpdate: true
-        });
-      });
-    },
-
-    getChartOption(chartData) {
-      // 使用传入的数据或默认数据
-      const data = chartData || {};
+      // 设置图表更新状态，防止在更新过程中触发resize
+      // this.setChartUpdating(true);
       
-      return {
-        tooltip: {
-          trigger: "item",
-          formatter: "本月的病害数量:{c}",
-        },
-        title: {
-          show: true,
-          text: "病害(数量)-时间变化趋势",
-          x: "center",
-          y: "top",
-        },
-        xAxis: {
-          name: "日期",
-          type: "category",
-          data: data.xAxisData || [
-            "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", 
-            "2023-06", "2023-07", "2023-09", "2023-10", "2023-11", "2023-12"
-          ],
-          axisLabel: {
-            rotate: 45,
-            color: "black",
-            fontSize: 12,
+      try {
+        this.chart.setOption({
+          tooltip: {
+            trigger: "item", // 触发类型，默认为 'item'
+            formatter: "本月的病害数量:{c}", // 提示框的内容格式化字符串，{b} 代表数据名称，{c} 代表数据值
+            // 其他属性设置
           },
-        },
-        yAxis: {
-          name: "病害数量",
-          type: "value",
-          axisLabel: {
-            formatter: "{value} 个",
-            color: "black",
-            fontSize: 12,
-          },
-          splitLine: {
+          title: {
             show: true,
+            text: "病害(数量)-时间变化趋势",
+            // text: '同一线路病害分布',
+            x: "center",
+            y: "top",
           },
-        },
-        legend: {
-          orient: "horizontal",
-          x: "center",
-          y: "30",
-          padding: [0, 50, 0, 0],
-          data: ["钢轨裂纹", "钢轨波磨", "轨枕裂纹", "翻浆冒泥", "道床裂纹"],
-        },
-        series: data.series || [
-          {
-            name: "钢轨裂纹",
-            data: [55, 58, 61, 66, 76, 84, 90, 94, 98, 100, 122, 132],
-            type: "line",
-            smooth: false,
-            label: {
-              show: false,
-              position: "top",
-              fontSize: 10,
+          xAxis: {
+            name: "日期",
+            type: "category",
+            data: [
+              "2023-01",
+              "2023-02",
+              "2023-03",
+              "2023-04",
+              "2023-05",
+              "2023-06",
+              "2023-07",
+              "2023-09",
+              "2023-10",
+              "2023-11",
+              "2023-12",
+            ],
+            axisLabel: {
+              rotate: 45,
+              color: "black",
+              fontSize: 12,
             },
           },
-          {
-            name: "钢轨波磨",
-            data: [53, 55, 58, 62, 73, 75, 78, 85, 93, 115, 123, 130],
-            type: "line",
-            smooth: false,
+          yAxis: {
+            name: "病害数量",
+            type: "value",
+            axisLabel: {
+              formatter: "{value} 个",
+              color: "black",
+              fontSize: 12,
+              // 其他属性设置
+            },
+            splitLine: {
+              show: true,
+            },
           },
-          {
-            name: "轨枕裂纹",
-            data: [35, 36, 40, 46, 56, 64, 70, 84, 88, 90, 102, 110],
-            type: "line",
-            smooth: false,
+          legend: {
+            orient: "horizontal",
+            x: "center", //可设定图例在左、右、居中
+            y: "30", //可设定图例在上、下、居中
+            padding: [0, 50, 0, 0], //可设定图例[距上方距离，距右方距离，距下方距离，距左方距离]
+            data: ["钢轨波磨", "轨枕裂纹", "翻浆冒泥", "道床裂纹"],
           },
-          {
-            name: "翻浆冒泥",
-            data: [33, 35, 48, 52, 63, 65, 68, 75, 83, 95, 103, 112],
-            type: "line",
-            smooth: false,
-          },
-          {
-            name: "道床裂纹",
-            data: [25, 32, 15, 56, 33, 49, 55, 62, 71, 83, 91, 105],
-            type: "line",
-            smooth: false,
-          },
-        ],
-      };
+          series: [
+            {
+              data: [55, 58, 61, 66, 76, 84, 90, 94, 98, 100, 122, 132],
+              type: "line",
+              smooth: false,
+              label: {
+                show: false,
+                position: "top",
+                fontSize: 10,
+              },
+            },
+            {
+              name: "钢轨波磨",
+              data: [53, 55, 58, 62, 73, 75, 78, 85, 93, 115, 123, 130],
+              type: "line",
+              smooth: false,
+            },
+            {
+              name: "轨枕裂纹",
+              data: [35, 36, 40, 46, 56, 64, 70, 84, 88, 90, 102, 110],
+              type: "line",
+              smooth: false,
+            },
+            {
+              name: "翻浆冒泥",
+              data: [33, 35, 48, 52, 63, 65, 68, 75, 83, 95, 103, 112],
+              type: "line",
+              smooth: false,
+            },
+            {
+              name: "道床裂纹",
+              data: [25, 32, 15, 56, 33, 49, 55, 62, 71, 83, 91, 105],
+              type: "line",
+              smooth: false,
+            },
+          ],
+        });
+      } catch (e) {
+        console.error('Error setting line chart options:', e);
+      } finally {
+        // 更新完成后重置状态
+        this.$nextTick(() => {
+          // this.setChartUpdating(false);
+        });
+      }
     },
-    
-    handleLegendSelect(params) {
-      // 图例选择变化时的处理
-      console.log('Legend selected:', params);
-      
-      // 延迟更新以避免冲突
-      this.safeChartUpdate(() => {
-        // 可以在这里根据图例选择状态更新图表
-        // 例如过滤数据等
-      });
-    }
   },
 };
 </script>

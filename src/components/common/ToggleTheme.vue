@@ -38,6 +38,7 @@ async function toggleDark({ clientX, clientY }) {
   )
 }
 </script>
+
 <style>
 /* 默认（亮色）模式 */
 body {
@@ -56,7 +57,7 @@ html.dark body {
     #314648 是起始颜色。
     #080F13 是结束颜色。
   */
-  background: linear-gradient(to bottom, #314648, #080F13);
+  background: linear-gradient(to bottom, #314648, #080f13);
   color: #fff;
   /* 夜间模式文字色保持不变 */
 
@@ -64,9 +65,9 @@ html.dark body {
      但您的代码中使用了 View Transition API，它会提供更高级的切换动画。*/
 }
 
-#app>div>div.wh-full.flex>article>div {
+#app > div > div.wh-full.flex > article > div {
   background-color: transparent;
   /* 保持文章背景透明 */
-  background: linear-gradient(to right, #314648, #080F13);
+  background: linear-gradient(to right, #314648, #080f13);
 }
 </style>

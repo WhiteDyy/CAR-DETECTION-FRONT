@@ -1,7 +1,9 @@
 <template>
-  <n-menu ref="menu" class="side-menu" accordion :indent="18" :collapsed-icon-size="22" :collapsed-width="64"
+  <n-menu
+    ref="menu" class="side-menu" accordion :indent="18" :collapsed-icon-size="22" :collapsed-width="64"
     :collapsed="appStore.collapsed" :options="permissionStore.menus" :value="activeKey"
-    @update:value="handleMenuSelect" />
+    @update:value="handleMenuSelect"
+  />
 </template>
 
 <script setup>

@@ -11,10 +11,10 @@
               </template>
             </n-statistic>
           </n-space>
-          </n-space>
+        </n-space>
         <div>
-          <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
-          
+          <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError">
+
           <p>当前图片: {{ currentImage }}</p>
           <!-- <p>图片数量: {{ imageList.length }}</p> -->
         </div>
@@ -26,12 +26,16 @@
           <n-card title="当前检测位置" segmented style="height: 100%;">
             <div class="position-container" style="transform: rotate(-90deg); transform-origin: center; height: 200px;">
               <div class="ruler-container" style="position: relative; height: 100%;">
-                <img src="@/assets/images/group.png" alt="Ruler" class="ruler-image"
-                  style="height: 100%; object-fit: contain;" />
-                <img src="@/assets/images/polygon.png" alt="Pointer" class="pointer-image" :style="{
-                  top: pointerPosition + '%',
-                  transform: 'translateY(-50%) rotate(90deg)'
-                }" style="position: absolute; left: 0; width: 24px; height: 24px;" />
+                <img
+                  src="@/assets/images/group.png" alt="Ruler" class="ruler-image"
+                  style="height: 100%; object-fit: contain;"
+                >
+                <img
+                  src="@/assets/images/polygon.png" alt="Pointer" class="pointer-image" :style="{
+                    top: `${pointerPosition}%`,
+                    transform: 'translateY(-50%) rotate(90deg)',
+                  }" style="position: absolute; left: 0; width: 24px; height: 24px;"
+                >
               </div>
               <div class="position-labels" style="display: flex; justify-content: space-between; margin-top: 10px;">
                 <span style="writing-mode: vertical-rl; transform: rotate(180deg);">终点</span>
@@ -47,7 +51,7 @@
             <n-card title="实时检测图像" segmented>
               <div>
                 <template v-if="currentImage">
-                  <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError" />
+                  <img :src="currentImage" alt="Current Image" style="max-width: 100%;" @error="handleImageError">
                   <p>当前图片: {{ currentImage }}</p>
                 </template>
                 <template v-else>
@@ -64,17 +68,31 @@
                 </colgroup>
                 <tbody>
                   <tr v-for="(row, index) in defectsTableData" :key="index" :style="rowStyle(index)">
-                    <th v-if="index === 0" rowspan="4" style="background-color: rgb(19, 21, 27)">钢轨病害</th>
-                    <th v-if="index === 1" rowspan="4" style="background-color: rgb(19, 21, 27)">扣件病害</th>
-                    <th v-if="index === 2" rowspan="4" style="background-color: rgb(19, 21, 27)">轨枕病害</th>
-                    <th v-if="index === 3" rowspan="4" style="background-color: rgb(19, 21, 27)">道床病害</th>
+                    <th v-if="index === 0" rowspan="4" style="background-color: rgb(19, 21, 27)">
+                      钢轨病害
+                    </th>
+                    <th v-if="index === 1" rowspan="4" style="background-color: rgb(19, 21, 27)">
+                      扣件病害
+                    </th>
+                    <th v-if="index === 2" rowspan="4" style="background-color: rgb(19, 21, 27)">
+                      轨枕病害
+                    </th>
+                    <th v-if="index === 3" rowspan="4" style="background-color: rgb(19, 21, 27)">
+                      道床病害
+                    </th>
 
                     <td>{{ row.type1 }}: {{ row.count1 }}个</td>
-                    <td v-if="row.trend1">▲</td>
+                    <td v-if="row.trend1">
+                      ▲
+                    </td>
                     <td>{{ row.type2 }}: {{ row.count2 }}个</td>
-                    <td v-if="row.trend2">▲</td>
+                    <td v-if="row.trend2">
+                      ▲
+                    </td>
                     <td>{{ row.type3 }}: {{ row.count3 }}个</td>
-                    <td v-if="row.trend3">▲</td>
+                    <td v-if="row.trend3">
+                      ▲
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -82,15 +100,12 @@
           </n-space>
         </n-col>
       </n-row>
-
-
     </n-space>
   </AppPage>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import SSEService from '@/utils/sse/sseService'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 // --- 响应式数据定义 ---
 
@@ -116,7 +131,7 @@ const defectsData = ref({
   fastenerShift: { name: '扣件移位', count: 0 },
   fastenerLoose: { name: '扣件松脱', count: 0 },
   sleeperCrack: { name: '轨枕裂纹', count: 0 },
-  ballastForeign: { name: '道床异物', count: 0 }
+  ballastForeign: { name: '道床异物', count: 0 },
 })
 
 // 表格列定义
@@ -124,48 +139,72 @@ const columns = [
   { title: '钢轨病害', key: 'railCategory', align: 'center' },
   { title: '扣件病害', key: 'fastenerCategory', align: 'center' },
   { title: '轨枕病害', key: 'sleeperCategory', align: 'center' },
-  { title: '道床病害', key: 'ballastCategory', align: 'center' }
+  { title: '道床病害', key: 'ballastCategory', align: 'center' },
 ]
 
 // 表格数据
 // 修改defectsTableData计算属性
 const defectsTableData = computed(() => [
   {
-    type1: "钢轨剥离掉块", count1: 2, trend1: true,
-    type2: "扣件缺失", count2: 2, trend2: true,
-    type3: "轨枕剥离掉块", count3: 0, trend3: false
+    type1: '钢轨剥离掉块',
+    count1: 2,
+    trend1: true,
+    type2: '扣件缺失',
+    count2: 2,
+    trend2: true,
+    type3: '轨枕剥离掉块',
+    count3: 0,
+    trend3: false,
   },
   {
-    type1: "钢轨裂纹", count1: 0, trend1: false,
-    type2: "扣件移位", count2: 0, trend2: false,
-    type3: "轨枕裂纹", count3: 2, trend3: true
+    type1: '钢轨裂纹',
+    count1: 0,
+    trend1: false,
+    type2: '扣件移位',
+    count2: 0,
+    trend2: false,
+    type3: '轨枕裂纹',
+    count3: 2,
+    trend3: true,
   },
   {
-    type1: "轨缝异常", count1: 0, trend1: false,
-    type2: "扣件松脱", count2: 0, trend2: false,
-    type3: "道床翻浆冒泥", count3: 0, trend3: false
+    type1: '轨缝异常',
+    count1: 0,
+    trend1: false,
+    type2: '扣件松脱',
+    count2: 0,
+    trend2: false,
+    type3: '道床翻浆冒泥',
+    count3: 0,
+    trend3: false,
   },
   {
-    type1: "", count1: 0, trend1: false,
-    type2: "", count2: 0, trend2: false,
-    type3: "道床异物", count3: 2, trend3: true
-  }
+    type1: '',
+    count1: 0,
+    trend1: false,
+    type2: '',
+    count2: 0,
+    trend2: false,
+    type3: '道床异物',
+    count3: 2,
+    trend3: true,
+  },
 ])
 
 // 表格行样式
-const rowStyle = (index) => {
+function rowStyle(index) {
   if (index % 2 === 0) {
     return { backgroundColor: 'rgb(19, 21, 27)' }
-  } else {
+  }
+  else {
     return { backgroundColor: 'rgb(28, 52, 54)' }
   }
 }
 
-
 // --- SSE 连接与数据处理 ---
 
 // SSE消息处理
-const handleImageUpdate = (data) => {
+function handleImageUpdate(data) {
   if (data.url) {
     // 将新图片加入队列（自动限制队列长度）
     if (imageQueue.value.length >= 3) {
@@ -182,7 +221,7 @@ const handleImageUpdate = (data) => {
     if (data.longitude && data.latitude) {
       currentPosition.value = {
         longitude: data.longitude,
-        latitude: data.latitude
+        latitude: data.latitude,
       }
     }
 
@@ -199,25 +238,35 @@ const handleImageUpdate = (data) => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false
+      hour12: false,
     }).replace(/\//g, '-')
   }
 
   // 处理病害数据
   if (data.defects) {
-    if (data.defects.rail !== undefined) defectsData.value.rail.count = data.defects.rail
-    if (data.defects.railCrack !== undefined) defectsData.value.railCrack.count = data.defects.railCrack
-    if (data.defects.jointAnomaly !== undefined) defectsData.value.jointAnomaly.count = data.defects.jointAnomaly
+    if (data.defects.rail !== undefined)
+      defectsData.value.rail.count = data.defects.rail
+    if (data.defects.railCrack !== undefined)
+      defectsData.value.railCrack.count = data.defects.railCrack
+    if (data.defects.jointAnomaly !== undefined)
+      defectsData.value.jointAnomaly.count = data.defects.jointAnomaly
 
-    if (data.defects.fastener !== undefined) defectsData.value.fastener.count = data.defects.fastener
-    if (data.defects.fastenerShift !== undefined) defectsData.value.fastenerShift.count = data.defects.fastenerShift
-    if (data.defects.fastenerLoose !== undefined) defectsData.value.fastenerLoose.count = data.defects.fastenerLoose
+    if (data.defects.fastener !== undefined)
+      defectsData.value.fastener.count = data.defects.fastener
+    if (data.defects.fastenerShift !== undefined)
+      defectsData.value.fastenerShift.count = data.defects.fastenerShift
+    if (data.defects.fastenerLoose !== undefined)
+      defectsData.value.fastenerLoose.count = data.defects.fastenerLoose
 
-    if (data.defects.sleeper !== undefined) defectsData.value.sleeper.count = data.defects.sleeper
-    if (data.defects.sleeperCrack !== undefined) defectsData.value.sleeperCrack.count = data.defects.sleeperCrack
+    if (data.defects.sleeper !== undefined)
+      defectsData.value.sleeper.count = data.defects.sleeper
+    if (data.defects.sleeperCrack !== undefined)
+      defectsData.value.sleeperCrack.count = data.defects.sleeperCrack
 
-    if (data.defects.ballast !== undefined) defectsData.value.ballast.count = data.defects.ballast
-    if (data.defects.ballastForeign !== undefined) defectsData.value.ballastForeign.count = data.defects.ballastForeign
+    if (data.defects.ballast !== undefined)
+      defectsData.value.ballast.count = data.defects.ballast
+    if (data.defects.ballastForeign !== undefined)
+      defectsData.value.ballastForeign.count = data.defects.ballastForeign
   }
 }
 
@@ -232,15 +281,16 @@ const pointerPosition = computed(() => {
 })
 
 // 开始播放
-const startPlayback = () => {
-  if (isPlaying.value) return
+function startPlayback() {
+  if (isPlaying.value)
+    return
 
   isPlaying.value = true
   playNextFrame()
 }
 
 // 播放下一帧
-const playNextFrame = () => {
+function playNextFrame() {
   if (imageQueue.value.length === 0) {
     isPlaying.value = false
     return
@@ -255,13 +305,12 @@ const playNextFrame = () => {
 }
 
 // 停止播放
-const stopPlayback = () => {
+function stopPlayback() {
   clearTimeout(playTimer)
   isPlaying.value = false
 }
 
-
-const handleImageError = (e) => {
+function handleImageError(e) {
   e.target.src = '/error-placeholder.jpg' // 设置默认错误图片
 }
 

@@ -72,18 +72,6 @@ export const basePermissions = [
         enable: true,
         show: true,
       },
-      {
-  code: 'DataAnalysis',
-  name: '数据视图',
-  type: 'MENU',
-  path: '/viewTable/dataAnalysis',
-  component: '/src/views/viewTable/dataAnalysis/index.vue',
-  icon: 'i-fe:zoom-out',
-  order: 654,
-  enable: true,
-  show: true,
-  children: []
-}
     ],
   },
 ]

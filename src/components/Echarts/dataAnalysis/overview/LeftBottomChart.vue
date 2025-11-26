@@ -11,6 +11,7 @@ import "echarts/lib/chart/bar";
 import "echarts/lib/component/tooltip";
 import "echarts/lib/component/title";
 
+import { markRaw } from 'vue';
 import chartResize from "../../mixins/chart-resize";
 export default {
   mixins: [chartResize],
@@ -162,7 +163,7 @@ export default {
     },
     initChart() {
       console.log("初始化echarts");
-      this.chart = echarts.init(this.$el);
+      this.chart = markRaw(echarts.init(this.$el));
       //父组件传值
       // this.setOptions(this.chartData);
       //解构父组件传的对象

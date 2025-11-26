@@ -1,25 +1,28 @@
 <template>
   <div class="page-wrapper">
-    <n-grid :cols="24" :x-gap="16" class="full-height-grid">
-
-      <n-gi :span="16" style="height: 100%;">
-        <n-flex vertical :size="16" class="full-height-flex">
+    <NGrid :cols="24" :x-gap="16" class="full-height-grid">
+      <NGi :span="16" style="height: 100%;">
+        <NFlex vertical :size="16" class="full-height-flex">
           <div class="block-a1" style="flex: 1 1 10%; min-height: 0;">
-            <img :src="highfive" alt="Logo" class="logo-image" />
-            <p class="logo-text">轨道智能管控</p>
+            <img :src="highfive" alt="Logo" class="logo-image">
+            <p class="logo-text">
+              轨道智能管控
+            </p>
           </div>
           <div class="block-a2" style="flex: 10 1 100%; min-height: 0;">
-            <n-grid :cols="2" :x-gap="10" :y-gap="5" class="card-grid">
-              <n-gi v-for="card in cards" :key="card.id">
-                <div class="card-container" :class="{ 'is-selected': selectedCard === card.id }"
-                  @click="handleCardClick(card)">
-                  <img :src="card.image" :alt="card.alt" class="card-image" />
+            <NGrid :cols="2" :x-gap="10" :y-gap="5" class="card-grid">
+              <NGi v-for="card in cards" :key="card.id">
+                <div
+                  class="card-container" :class="{ 'is-selected': selectedCard === card.id }"
+                  @click="handleCardClick(card)"
+                >
+                  <img :src="card.image" :alt="card.alt" class="card-image">
                 </div>
-              </n-gi>
-            </n-grid>
+              </NGi>
+            </NGrid>
           </div>
-        </n-flex>
-      </n-gi>
+        </NFlex>
+      </NGi>
 
       <!-- <n-gi :span="8" style="height: 100%;">
         <n-flex vertical :size="16" class="full-height-flex">
@@ -34,72 +37,101 @@
           </div>
         </n-flex>
       </n-gi> -->
-      <n-gi :span="8" style="height: 100%;">
-        <n-card class="user-panel-card" :bordered="false">
-          <n-flex align="center" class="b-section">
-            <n-avatar round :size="54" :src="faviconSrc" />
+      <NGi :span="8" style="height: 100%;">
+        <NCard class="user-panel-card" :bordered="false">
+          <NFlex align="center" class="b-section">
+            <NAvatar round :size="54" :src="faviconSrc" />
             <div class="user-greeting">
-              <p class="greeting-text">Hello, admin</p>
-              <p class="timestamp-text">2023-11-18 16:18:59</p>
+              <p class="greeting-text">
+                Hello, admin
+              </p>
+              <p class="timestamp-text">
+                2023-11-18 16:18:59
+              </p>
             </div>
-          </n-flex>
+          </NFlex>
 
           <div class="b-section">
-            <n-flex justify="space-between" align="center" class="section-header">
-              <h3 class="section-title">用户信息</h3>
-              <div class="section-icon">❂</div>
-            </n-flex>
+            <NFlex justify="space-between" align="center" class="section-header">
+              <h3 class="section-title">
+                用户信息
+              </h3>
+              <div class="section-icon">
+                ❂
+              </div>
+            </NFlex>
             <div class="user-info-box">
-              <n-space vertical justify="center">
+              <NSpace vertical justify="center">
                 <span>姓名： admin</span>
                 <span>工号： 12345678</span>
                 <span>岗位： 质检员</span>
-              </n-space>
+              </NSpace>
             </div>
-            <n-space justify="space-between" class="action-buttons">
-              <n-button strong secondary type="primary" ghost>创建新用户</n-button>
-              <n-button strong secondary type="primary" ghost>新增角色</n-button>
-              <n-button strong secondary type="tertiary" ghost>密码重置</n-button>
-            </n-space>
+            <NSpace justify="space-between" class="action-buttons">
+              <NButton type="primary" ghost strong secondary>
+                创建新用户
+              </NButton>
+              <NButton strong secondary type="primary" ghost>
+                新增角色
+              </NButton>
+              <NButton strong secondary type="tertiary" ghost>
+                密码重置
+              </NButton>
+            </NSpace>
           </div>
 
           <div class="b-section">
-            <n-flex justify="space-between" align="center" class="section-header">
-              <h3 class="section-title">管理信息</h3>
-              <div class="section-icon">•••</div>
-            </n-flex>
-
-            <n-space vertical :size="16">
-              <div v-for="role in roles" :key="role.id" class="role-management-card">
-                <n-flex justify="space-between" align="center">
-                  <n-flex align="center">
-                    <div class="role-icon">🎓</div>
-                    <div>
-                      <p class="role-name">{{ role.name }}</p>
-                      <p class="role-key">{{ role.key }}</p>
-                    </div>
-                  </n-flex>
-                  <n-switch v-model:value="role.active" />
-                </n-flex>
-                <n-space justify="space-between" class="role-buttons">
-                  <n-button type="primary" strong ghost>分配用户</n-button>
-                  <n-button type="info" strong ghost>编辑</n-button>
-                  <n-button type="error" strong ghost>删除</n-button>
-                </n-space>
+            <NFlex justify="space-between" align="center" class="section-header">
+              <h3 class="section-title">
+                管理信息
+              </h3>
+              <div class="section-icon">
+                •••
               </div>
-            </n-space>
+            </NFlex>
+
+            <NSpace vertical :size="16">
+              <div v-for="role in roles" :key="role.id" class="role-management-card">
+                <NFlex justify="space-between" align="center">
+                  <NFlex align="center">
+                    <div class="role-icon">
+                      🎓
+                    </div>
+                    <div>
+                      <p class="role-name">
+                        {{ role.name }}
+                      </p>
+                      <p class="role-key">
+                        {{ role.key }}
+                      </p>
+                    </div>
+                  </NFlex>
+                  <NSwitch v-model:value="role.active" />
+                </NFlex>
+                <NSpace justify="space-between" class="role-buttons">
+                  <NButton type="primary" strong ghost>
+                    分配用户
+                  </NButton>
+                  <NButton type="info" strong ghost>
+                    编辑
+                  </NButton>
+                  <NButton type="error" strong ghost>
+                    删除
+                  </NButton>
+                </NSpace>
+              </div>
+            </NSpace>
           </div>
-        </n-card>
-      </n-gi>
-    </n-grid>
+        </NCard>
+      </NGi>
+    </NGrid>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
 // import { NGrid, NGi, NFlex } from 'naive-ui'; // 1. 引入 NFlex
-import { NGrid, NGi, NFlex, NCard, NAvatar, NSpace, NButton, NSwitch } from 'naive-ui';
-
+import { NAvatar, NButton, NCard, NFlex, NGi, NGrid, NSpace, NSwitch } from 'naive-ui'
+import { ref } from 'vue'
 
 // 为了让模板更简洁，将卡片数据整合为一个数组
 // const cards = ref([
@@ -109,44 +141,38 @@ import { NGrid, NGi, NFlex, NCard, NAvatar, NSpace, NButton, NSwitch } from 'nai
 //   { id: 4, image: new URL('@/assets/images/home/tablet.png', import.meta.url).href, alt: '结果报表查询' }
 // ]);
 
-
-
 // 2. 获取路由器实例
-const router = useRouter();
+const router = useRouter()
 
 // 3. 在卡片数据中，为每个对象添加一个 `route` 属性
 const cards = ref([
   { id: 1, image: new URL('@/assets/images/home/device.png', import.meta.url).href, alt: '传感器状态', route: '/sensor/monitor' },
   { id: 2, image: new URL('@/assets/images/home/charts.png', import.meta.url).href, alt: '任务创建与管理', route: '/taskmanage/task-list' },
   { id: 3, image: new URL('@/assets/images/home/train.png', import.meta.url).href, alt: '轨道检测', route: '/rail-detection' },
-  { id: 4, image: new URL('@/assets/images/home/tablet.png', import.meta.url).href, alt: '结果报表查询', route: '/result-table/surface/index' }
-]);
+  { id: 4, image: new URL('@/assets/images/home/tablet.png', import.meta.url).href, alt: '结果报表查询', route: '/result-table/surface/index' },
+])
 
-
-const highfive = new URL('@/assets/images/home/highfive.png', import.meta.url).href;
-const selectedCard = ref(null);
+const highfive = new URL('@/assets/images/home/highfive.png', import.meta.url).href
+const selectedCard = ref(null)
 
 // B 区用户头像 (这是本次新增的关键修复)
-const faviconSrc = new URL('@/assets/images/home/favicon.png', import.meta.url).href;
+const faviconSrc = new URL('@/assets/images/home/favicon.png', import.meta.url).href
 
 // 2. 新增：为管理信息创建数据源
 const roles = ref([
   { id: 'super_admin', name: '超级管理员', key: 'SUPER_ADMIN', active: false },
-  { id: 'qa', name: '质检员', key: 'ROLE_QA', active: true }
-]);
-
+  { id: 'qa', name: '质检员', key: 'ROLE_QA', active: true },
+])
 
 function handleCardClick(card) {
   // 首先，更新选中卡片的样式状态
-  selectedCard.value = card.id;
-  
+  selectedCard.value = card.id
+
   // 然后，执行页面跳转
   if (card.route) {
-    router.push(card.route);
+    router.push(card.route)
   }
 }
-
-
 </script>
 
 <style scoped>
@@ -236,7 +262,6 @@ function handleCardClick(card) {
   grid-template-rows: 1fr 1fr;
 }
 
-
 /* ... 其他如 logo, card-container, card-image 等样式保持不变 ... */
 .logo-image {
   height: 55px;
@@ -255,7 +280,9 @@ function handleCardClick(card) {
   height: 100%;
   border-radius: 16px;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -406,7 +433,6 @@ p:not(.logo-text) {
 .role-buttons .n-button {
   flex: 1;
 }
-
 
 /* ---- B 区按钮样式最终修复 ---- */
 

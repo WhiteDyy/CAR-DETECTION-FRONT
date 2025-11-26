@@ -1,5 +1,5 @@
 import { request } from '@/utils'
 
 export default {
-    getCondense: data => request.post('/condense/search', data),
+  getCondense: data => request.post('/condense/search', data),
 }

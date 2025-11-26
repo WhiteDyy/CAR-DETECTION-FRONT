@@ -1,64 +1,80 @@
 <template>
   <CommonPage>
     <div class="dashboard">
-      <n-alert v-if="errorMessage" type="error" :title="errorMessage" />
+      <NAlert v-if="errorMessage" type="error" :title="errorMessage" />
       <div class="charts-container">
-        <n-grid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="2" :y-gap="2">
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence"
-                title="点头陀螺" xAxisName="编码器值" yAxisName="幅度/s" />
-            </n-card>
-          </n-gi>
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence"
-                title="摇头陀螺" xAxisName="编码器值" yAxisName="幅度/s" />
-            </n-card>
-          </n-gi>
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="dipmeter" color="rgb(75, 192, 192)" :x-axis-data="xAxisSequence"
-                title="倾角仪" xAxisName="编码器值" yAxisName="度" />
-            </n-card>
-          </n-gi>
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence"
-                title="横向加速度" xAxisName="编码器值" yAxisName="m/s&sup2" />
-            </n-card>
-          </n-gi>
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence"
-                title="横移加速度" xAxisName="编码器值" yAxisName="m/s&sup2" />
-            </n-card>
-          </n-gi>
-          <n-gi>
-            <n-card class="chart-card">
-              <LineChart :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence"
-                title="沉浮加速度" xAxisName="编码器值" yAxisName="m/s&#178" />
-            </n-card>
-          </n-gi>
-        </n-grid>
+        <NGrid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="2" :y-gap="2">
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence"
+                title="点头陀螺" x-axis-name="编码器值" y-axis-name="幅度/s"
+              />
+            </NCard>
+          </NGi>
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence"
+                title="摇头陀螺" x-axis-name="编码器值" y-axis-name="幅度/s"
+              />
+            </NCard>
+          </NGi>
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="dipmeter" color="rgb(75, 192, 192)" :x-axis-data="xAxisSequence"
+                title="倾角仪" x-axis-name="编码器值" y-axis-name="度"
+              />
+            </NCard>
+          </NGi>
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence"
+                title="横向加速度" x-axis-name="编码器值" y-axis-name="m/s&sup2"
+              />
+            </NCard>
+          </NGi>
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence"
+                title="横移加速度" x-axis-name="编码器值" y-axis-name="m/s&sup2"
+              />
+            </NCard>
+          </NGi>
+          <NGi>
+            <NCard class="chart-card">
+              <LineChart
+                :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence"
+                title="沉浮加速度" x-axis-name="编码器值" y-axis-name="m/s&#178"
+              />
+            </NCard>
+          </NGi>
+        </NGrid>
       </div>
 
       <div class="device-status-grid">
         <div v-for="(device, index) in deviceStatusList" :key="index" class="device-card">
           <div class="device-header">
             <div class="device-info">
-              <div class="device-title">{{ device.name }}</div>
-              <div class="device-sub ">
+              <div class="device-title">
+                {{ device.name }}
+              </div>
+              <div class="device-sub">
                 <span class="mt-[15px]">{{ device.label }}</span>
                 <!-- 状态切换时更新 label -->
-                <n-switch v-if="device.type != 'status'" v-model:value="device.online" :style="{
-                  backgroundColor: device.online ? 'rgb(206, 23, 47)' : 'rgb(0, 0, 0)',
-                  borderRadius: '16px',
-                  transition: 'background-color 0.3s',
-                }" @update:value="updateLabel(device)" class="device-switch" />
+                <n-switch
+                  v-if="device.type != 'status'" v-model:value="device.online" :style="{
+                    backgroundColor: device.online ? 'rgb(206, 23, 47)' : 'rgb(0, 0, 0)',
+                    borderRadius: '16px',
+                    transition: 'background-color 0.3s',
+                  }" class="device-switch" @update:value="updateLabel(device)"
+                />
               </div>
             </div>
-            <img :src="device.icon" class="device-icon" />
+            <img :src="device.icon" class="device-icon">
           </div>
         </div>
       </div>
@@ -93,40 +109,45 @@
           </tbody>
         </table>
       </div> -->
-
     </div>
   </CommonPage>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
-import { debounce } from 'lodash';
-import LineChart from './LineChart.vue';
-import CommonPage from '@/components/common/CommonPage.vue';
-import { NGrid, NGi, NCard, NAlert, NButton } from 'naive-ui';
-import SSEService from '@/utils/sse/sseService';
+import CommonPage from '@/components/common/CommonPage.vue'
+import SSEService from '@/utils/sse/sseService'
+import { debounce } from 'lodash'
+import { NAlert, NCard, NGi, NGrid } from 'naive-ui'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import LineChart from './LineChart.vue'
 
 const chartData = reactive({
-  groa: [], grob: [], dipmeter: [], ga: [], gb: [], gc: [], cnt: [],
-});
-const sequence = ref([]);
-const xAxisSequence = ref([]);
-const latestData = ref([]);
-const maxPoints = 100;
-const errorMessage = ref('');
+  groa: [],
+  grob: [],
+  dipmeter: [],
+  ga: [],
+  gb: [],
+  gc: [],
+  cnt: [],
+})
+const sequence = ref([])
+const xAxisSequence = ref([])
+const latestData = ref([])
+const maxPoints = 100
+const errorMessage = ref('')
 
 const updateCharts = debounce(() => {
-  xAxisSequence.value = Array.from({ length: chartData.groa.length }, (_, i) => i + 1);
-  chartData.groa = [...chartData.groa];
-  chartData.grob = [...chartData.grob];
-  chartData.dipmeter = [...chartData.dipmeter];
-  chartData.ga = [...chartData.ga];
-  chartData.gb = [...chartData.gb];
-  chartData.gc = [...chartData.gc];
-  chartData.cnt = [...chartData.cnt];
-  xAxisSequence.value = [...xAxisSequence.value];
-  latestData.value = [...latestData.value];
-}, 200);
+  xAxisSequence.value = Array.from({ length: chartData.groa.length }, (_, i) => i + 1)
+  chartData.groa = [...chartData.groa]
+  chartData.grob = [...chartData.grob]
+  chartData.dipmeter = [...chartData.dipmeter]
+  chartData.ga = [...chartData.ga]
+  chartData.gb = [...chartData.gb]
+  chartData.gc = [...chartData.gc]
+  chartData.cnt = [...chartData.cnt]
+  xAxisSequence.value = [...xAxisSequence.value]
+  latestData.value = [...latestData.value]
+}, 200)
 
 const deviceStatusList = ref([
   { name: '编码器1', label: '速度值：', icon: '/encoder.png', type: 'status', online: false },
@@ -151,19 +172,19 @@ const deviceStatusList = ref([
   { name: '相机光源4', label: '离线状态', icon: '/light.png', online: false },
   { name: '相机光源5', label: '离线状态', icon: '/light.png', online: false },
   // 可继续补充更多
-]);
-const updateLabel = (device) => {
+])
+function updateLabel(device) {
   // 根据在线状态更新 label
-  device.label = device.online ? '在线状态' : '离线状态';
-};
-const sseUrl = '/api/sensor';
-const sse = new SSEService(sseUrl);
+  device.label = device.online ? '在线状态' : '离线状态'
+}
+const sseUrl = '/api/sensor'
+const sse = new SSEService(sseUrl)
 
-const handleMessage = (data) => {
-  errorMessage.value = '';
-  console.log("查看传感器数据:", data);
+function handleMessage(data) {
+  errorMessage.value = ''
+  console.log('查看传感器数据:', data)
   if (!data || typeof data.sequence !== 'number') {
-    return;
+    return
   }
   const parsedData = {
     sequence: data.sequence,
@@ -175,50 +196,50 @@ const handleMessage = (data) => {
     groa: Number(data.groa) || 0,
     grob: Number(data.grob) || 0,
     startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
-  };
-  chartData.groa.push(parsedData.groa);
-  chartData.grob.push(parsedData.grob);
-  chartData.dipmeter.push(parsedData.dipmeter);
-  chartData.ga.push(parsedData.ga);
-  chartData.gb.push(parsedData.gb);
-  chartData.gc.push(parsedData.gc);
-  chartData.cnt.push(parsedData.cnt);
-  sequence.value.push(parsedData.sequence);
+  }
+  chartData.groa.push(parsedData.groa)
+  chartData.grob.push(parsedData.grob)
+  chartData.dipmeter.push(parsedData.dipmeter)
+  chartData.ga.push(parsedData.ga)
+  chartData.gb.push(parsedData.gb)
+  chartData.gc.push(parsedData.gc)
+  chartData.cnt.push(parsedData.cnt)
+  sequence.value.push(parsedData.sequence)
   if (chartData.groa.length > maxPoints) {
-    chartData.groa.shift();
-    chartData.grob.shift();
-    chartData.dipmeter.shift();
-    chartData.ga.shift();
-    chartData.gb.shift();
-    chartData.gc.shift();
-    chartData.cnt.shift();
-    sequence.value.shift();
+    chartData.groa.shift()
+    chartData.grob.shift()
+    chartData.dipmeter.shift()
+    chartData.ga.shift()
+    chartData.gb.shift()
+    chartData.gc.shift()
+    chartData.cnt.shift()
+    sequence.value.shift()
   }
-  latestData.value.push(parsedData);
+  latestData.value.push(parsedData)
   if (latestData.value.length > 5) {
-    latestData.value = latestData.value.slice(-5);
+    latestData.value = latestData.value.slice(-5)
   }
-  console.warn('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length);
-  updateCharts();
-};
+  console.warn('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length)
+  updateCharts()
+}
 
-const resetStateOnReconnect = () => {
-  latestData.value = [];
-};
+function resetStateOnReconnect() {
+  latestData.value = []
+}
 
 onMounted(() => {
-  console.warn('Mounting, adding SSE listener');
-  sse.addEventListener('sensor-data', handleMessage);
-  sse.addEventListener('reconnect', resetStateOnReconnect);
-  sse.start();
-});
+  console.warn('Mounting, adding SSE listener')
+  sse.addEventListener('sensor-data', handleMessage)
+  sse.addEventListener('reconnect', resetStateOnReconnect)
+  sse.start()
+})
 
 onUnmounted(() => {
-  console.warn('Unmounting, removing SSE listener');
-  sse.removeEventListener('sensor-data', handleMessage);
-  sse.removeEventListener('reconnect', resetStateOnReconnect);
-  sse.stop();
-});
+  console.warn('Unmounting, removing SSE listener')
+  sse.removeEventListener('sensor-data', handleMessage)
+  sse.removeEventListener('reconnect', resetStateOnReconnect)
+  sse.stop()
+})
 </script>
 
 <style scoped>

@@ -2,74 +2,77 @@
   <CommonPage>
     <div ref="taskContainer" style="padding: 20px; border-radius: 20px;">
       <!-- 搜索和按钮区域保持不变 -->
-      <n-space justify="space-between" align="center">
-        <n-input v-model:value="searchQuery" placeholder="搜索任务"
-          style="background-color: #24221e56; border: 1px solid #ffffff; border-radius: 16px; color: #ffffff; width: 300px; height: 40px;">
-        </n-input>
-        <n-space>
+      <NSpace justify="space-between" align="center">
+        <NInput
+          v-model:value="searchQuery" placeholder="搜索任务"
+          style="background-color: #24221e56; border: 1px solid #ffffff; border-radius: 16px; color: #ffffff; width: 300px; height: 40px;"
+        />
+        <NSpace>
           <!-- 重置按钮 - 黑色背景 白色文字 -->
-          <n-button class="reset-btn" @click="goToCreate">
+          <NButton class="reset-btn" @click="goToCreate">
             重置
-          </n-button>
+          </NButton>
 
           <!-- 查询按钮 - 深灰色背景 白色文字 -->
-          <n-button class="query-btn" @click="goToCreate">
+          <NButton class="query-btn" @click="goToCreate">
             查询
-          </n-button>
+          </NButton>
 
           <!-- 新增按钮 - 浅蓝色背景 深红色文字 -->
-          <n-button class="add-btn" @click="goToCreate">
+          <NButton class="add-btn" @click="goToCreate">
             新增
-          </n-button>
-        </n-space>
-      </n-space>
+          </NButton>
+        </NSpace>
+      </NSpace>
 
       <!-- 新增的表格背景容器 -->
       <div class="table-background-container">
-        <n-data-table striped :columns="columns" :data="filteredTaskList" :pagination="pagination" :bordered="false" 
-          class="transparent-table" style="position: relative;" />
+        <n-data-table
+          striped :columns="columns" :data="filteredTaskList" :pagination="pagination" :bordered="false"
+          class="transparent-table" style="position: relative;"
+        />
       </div>
     </div>
   </CommonPage>
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue';
-import { useRouter } from 'vue-router';
-import { NButton, NSpace, NPopconfirm, NRadioGroup, NRadio, NInput, NIcon } from 'naive-ui';
-import api from './api';
-import { useTaskStore } from '@/store';
+import { useTaskStore } from '@/store'
+import { NButton, NInput, NRadio, NRadioGroup, NSpace } from 'naive-ui'
+import { computed, h, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import api from './api'
 
-const router = useRouter();
-const searchQuery = ref('');
-const taskContainer = ref(null);
-const tableHeight = ref(0);
+const router = useRouter()
+const searchQuery = ref('')
+const taskContainer = ref(null)
+const tableHeight = ref(0)
 
-
-const updateHeight = () => {
+function updateHeight() {
   if (taskContainer.value) {
-    const windowHeight = window.innerHeight;
-    const containerHeight = windowHeight * 0.8; // 例如70%的窗口高度
-    taskContainer.value.style.height = `${containerHeight}px`;
-  }
-};
-
-async function getJobsData() {
-  try {
-    const response = await api.getJobsList();
-    if (response.data) {
-      taskList.value = response.data.pageData;
-      pagination.value.itemCount = response.data.length;
-      $message.success('获取作业数据成功');
-      return response.data;
-    }
-  } catch (error) {
-    console.error('获取作业数据失败:', error);
-    $message.error('获取作业数据失败');
+    const windowHeight = window.innerHeight
+    const containerHeight = windowHeight * 0.8 // 例如70%的窗口高度
+    taskContainer.value.style.height = `${containerHeight}px`
   }
 }
 
-const taskList = ref([]);
+async function getJobsData() {
+  try {
+    const response = await api.getJobsList()
+    if (response.data) {
+      taskList.value = response.data.pageData
+      pagination.value.itemCount = response.data.length
+      $message.success('获取作业数据成功')
+      return response.data
+    }
+  }
+  catch (error) {
+    console.error('获取作业数据失败:', error)
+    $message.error('获取作业数据失败')
+  }
+}
+
+const taskList = ref([])
 // const filteredTaskList = computed(() => {
 //   if (!searchQuery.value) return taskList.value;
 //   return taskList.value.filter((task) =>
@@ -78,13 +81,14 @@ const taskList = ref([]);
 //   );
 // });
 const filteredTaskList = computed(() => {
-  if (!searchQuery.value) return taskList.value;
+  if (!searchQuery.value)
+    return taskList.value
   return taskList.value.filter((task) => {
-    const jobName = task.jobName ? task.jobName.toLowerCase() : '';
-    const description = task.description ? task.description.toLowerCase() : '';
-    return jobName.includes(searchQuery.value.toLowerCase()) || description.includes(searchQuery.value.toLowerCase());
-  });
-});
+    const jobName = task.jobName ? task.jobName.toLowerCase() : ''
+    const description = task.description ? task.description.toLowerCase() : ''
+    return jobName.includes(searchQuery.value.toLowerCase()) || description.includes(searchQuery.value.toLowerCase())
+  })
+})
 
 const columns = [
   { title: '任务名称', key: 'jobName' },
@@ -94,12 +98,12 @@ const columns = [
     title: '执行时间',
     key: 'timeRange',
     render(row) {
-      return `${formatDateTime(row.startTime)} ~ ${formatDateTime(row.endTime)}`;
-    }
+      return `${formatDateTime(row.startTime)} ~ ${formatDateTime(row.endTime)}`
+    },
   },
   { title: '操作人员', key: 'operator' },
   { title: '设备编号', key: 'deviceId' },
-  { title: '创建时间', key: 'createdAt', render: (row) => formatDateTime(row.createdAt) },
+  { title: '创建时间', key: 'createdAt', render: row => formatDateTime(row.createdAt) },
   {
     title: '操作',
     key: 'actions',
@@ -111,16 +115,17 @@ const columns = [
           h(NButton, { size: 'small', onClick: () => editTask(row) }, { default: () => '编辑' }),
           h(NButton, { size: 'small', type: 'error', onClick: () => handleDelete(row.id) }, { default: () => '删除' }),
           h(NButton, { size: 'small', type: 'primary', onClick: () => startDetection(row) }, { default: () => '开始检测' }),
-        ]
-      );
+        ],
+      )
     },
   },
-];
+]
 
-const selectedDetectionType = ref('image');
+const selectedDetectionType = ref('image')
 
-const handleDelete = async (id, confirmOptions) => {
-  if (id === undefined || id === null) return;
+async function handleDelete(id, confirmOptions) {
+  if (id === undefined || id === null)
+    return
   window.$dialog?.warning({
     content: '确定删除此任务吗？',
     title: '删除确认',
@@ -128,107 +133,111 @@ const handleDelete = async (id, confirmOptions) => {
     negativeText: '取消',
     async onPositiveClick() {
       try {
-        const d = this;
-        d.loading = true;
-        const index = taskList.value.findIndex(task => task.id === id);
+        const d = this
+        d.loading = true
+        const index = taskList.value.findIndex(task => task.id === id)
         if (index !== -1) {
-          taskList.value.splice(index, 1);
-          pagination.value.itemCount = taskList.value.length;
+          taskList.value.splice(index, 1)
+          pagination.value.itemCount = taskList.value.length
         }
-        $message.success('删除成功');
-        d.loading = false;
-      } catch (error) {
-        console.error(error);
-        $message.error('删除失败!');
-        this.loading = false;
+        $message.success('删除成功')
+        d.loading = false
+      }
+      catch (error) {
+        console.error(error)
+        $message.error('删除失败!')
+        this.loading = false
       }
     },
     ...confirmOptions,
-  });
-};
+  })
+}
 
-const startDetection = (row) => {
+function startDetection(row) {
   window.$dialog?.success({
     title: '选择检测类型',
     content: () => h(NRadioGroup, {
-      value: selectedDetectionType.value,
-      'onUpdate:value': (val) => selectedDetectionType.value = val
+      'value': selectedDetectionType.value,
+      'onUpdate:value': val => selectedDetectionType.value = val,
     }, () => [
       h(NSpace, { vertical: true }, [
         h(NRadio, { value: 'image' }, '图像实时检测'),
-        h(NRadio, { value: 'geometry' }, '几何实时检测')
-      ])
+        h(NRadio, { value: 'geometry' }, '几何实时检测'),
+      ]),
     ]),
     positiveText: '确定',
     negativeText: '取消',
     onPositiveClick: async () => {
       try {
-        await createTaskRecord(row);
+        await createTaskRecord(row)
         if (selectedDetectionType.value === 'image') {
-          router.push('/surface-detection/overview');
-        } else {
-          router.push('/track-geometry/overview');
+          router.push('/surface-detection/overview')
         }
-      } catch (error) {
-        $message.error('操作失败' + error.message);
+        else {
+          router.push('/track-geometry/overview')
+        }
       }
-    }
-  });
-};
+      catch (error) {
+        $message.error(`操作失败${error.message}`)
+      }
+    },
+  })
+}
 
-const createTaskRecord = async (task) => {
-  const taskStore = useTaskStore();
-  console.log('创建任务记录:', task);
+async function createTaskRecord(task) {
+  const taskStore = useTaskStore()
+  console.log('创建任务记录:', task)
   const response = await api.startCurrentJob({
     jobId: task.id,
     startTime: task.startTime,
     startStation: task.startStation,
     operator: task.operator,
-    jobStatus: "started",
+    jobStatus: 'started',
     createdAt: new Date().toISOString(),
-  });
+  })
   if (response.code !== 0) {
-    throw new Error('创建任务记录失败');
-  } else {
-    $message.success('任务记录创建成功');
-    taskStore.setCurrentTask(response.data);
+    throw new Error('创建任务记录失败')
   }
-};
+  else {
+    $message.success('任务记录创建成功')
+    taskStore.setCurrentTask(response.data)
+  }
+}
 
-const formatDateTime = (dateTimeString) => {
-  if (!dateTimeString) return '';
-  const date = new Date(dateTimeString);
+function formatDateTime(dateTimeString) {
+  if (!dateTimeString)
+    return ''
+  const date = new Date(dateTimeString)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+    minute: '2-digit',
+  })
+}
 
 const pagination = ref({
   page: 1,
   pageSize: 10,
   itemCount: taskList.value.length,
-});
+})
 
-const goToCreate = () => router.push('/taskmanage/task-create');
-const editTask = (row) => router.push(`/tasks/edit/${row.id}`);
+const goToCreate = () => router.push('/taskmanage/task-create')
+const editTask = row => router.push(`/tasks/edit/${row.id}`)
 
 onMounted(() => {
-  updateHeight();
-  window.addEventListener('resize', updateHeight);
-  getJobsData();
-});
+  updateHeight()
+  window.addEventListener('resize', updateHeight)
+  getJobsData()
+})
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateHeight);
-});
+  window.removeEventListener('resize', updateHeight)
+})
 
-watch(() => filteredTaskList.value.length, updateHeight);
+watch(() => filteredTaskList.value.length, updateHeight)
 </script>
-
 
 <style scoped>
 .reset-btn:deep(.n-button) {
@@ -300,7 +309,6 @@ watch(() => filteredTaskList.value.length, updateHeight);
 
 /* 透明表格样式 */
 
-
 /* 深度穿透选择器覆盖Naive UI默认样式 */
 
 /* 表头样式 */
@@ -312,7 +320,6 @@ watch(() => filteredTaskList.value.length, updateHeight);
 
 /* 单元格样式 */
 :deep(.n-data-table-td) {
-  
   border-bottom: 1px solid rgba(0, 170, 255, 0.3) !important;
   color: #ffffff !important;
 }
@@ -325,20 +332,16 @@ watch(() => filteredTaskList.value.length, updateHeight);
 /* 行分隔伪元素 */
 :deep(.n-data-table-tr) {
   position: relative;
- 
 }
 
 :deep(.n-data-table-tr:not(:last-child)::after) {
-  content: "";
+  content: '';
   position: absolute;
   bottom: 0;
   left: 10px;
   right: 10px;
   height: 1px;
-  background: linear-gradient(to right,
-      rgba(10, 138, 109, 0),
-      rgba(48, 126, 151, 0.8),
-      rgba(10, 138, 109, 0));
+  background: linear-gradient(to right, rgba(10, 138, 109, 0), rgba(48, 126, 151, 0.8), rgba(10, 138, 109, 0));
 }
 
 /* 分页器样式 */

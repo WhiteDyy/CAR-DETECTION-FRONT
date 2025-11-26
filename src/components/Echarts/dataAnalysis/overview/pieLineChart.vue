@@ -4,7 +4,7 @@
 
 <script>
 // 按需引入 引入 ECharts 主模块
-import * as echarts from "echarts/lib/echarts";
+import * as echarts from "echarts";
 // 引入柱状图
 import "echarts/lib/chart/line";
 import "echarts/lib/chart/pie";
@@ -12,6 +12,7 @@ import "echarts/lib/chart/pie";
 import "echarts/lib/component/tooltip";
 import "echarts/lib/component/title";
 
+import { markRaw } from 'vue';
 import chartResize from "../../mixins/chart-resize";
 export default {
   name: "pieLineChart",
@@ -67,7 +68,7 @@ export default {
   },
   methods: {
     initChart() {
-      this.chart = echarts.init(this.$el);
+      this.chart = markRaw(echarts.init(this.$el));
       this.setOptions(this.chartData);
     },
     setOptions({ days, data1, data2 } = {}) {
