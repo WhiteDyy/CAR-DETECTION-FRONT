@@ -86,6 +86,10 @@ export default {
             text: "总病害数量统计",
             x: "center",
             y: "top",
+            textStyle: {
+              color: "white",
+              fontSize: 16,
+            }
           },
           dataset: {
             dimensions: ["name", "score"],
@@ -109,14 +113,14 @@ export default {
             axisLabel: { 
               interval: 0, 
               rotate: 30,
-              color: "black",
+              color: "white",
               fontSize: 12
             },
           },
           yAxis: {
             name:"病害总数量",
             axisLabel: {
-              color: "black",
+              color: "white",
               fontSize: 12
             }
           },

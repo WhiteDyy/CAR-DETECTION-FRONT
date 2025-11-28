@@ -91,6 +91,10 @@ export default {
             // text: '同一线路病害分布',
             x: "center",
             y: "top",
+            textStyle: {
+              color: "white",
+              fontSize: 16,
+            },
           },
           xAxis: {
             name: "日期",
@@ -110,7 +114,7 @@ export default {
             ],
             axisLabel: {
               rotate: 45,
-              color: "black",
+              color: "white",
               fontSize: 12,
             },
           },
@@ -119,7 +123,7 @@ export default {
             type: "value",
             axisLabel: {
               formatter: "{value} 个",
-              color: "black",
+              color: "white",
               fontSize: 12,
               // 其他属性设置
             },
@@ -133,6 +137,10 @@ export default {
             y: "30", //可设定图例在上、下、居中
             padding: [0, 50, 0, 0], //可设定图例[距上方距离，距右方距离，距下方距离，距左方距离]
             data: ["钢轨波磨", "轨枕裂纹", "翻浆冒泥", "道床裂纹"],
+            textStyle: {
+              color: "white",
+              fontSize: 12,
+            },
           },
           series: [
             {

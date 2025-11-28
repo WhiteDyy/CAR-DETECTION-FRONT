@@ -6,4 +6,5 @@ export default {
   getJobsList: () => request.get('/jobs/all_jobs'),
   startCurrentJob: data => request.post('/jobs/start_job', data),
   stopCurrentJob: data => request.post('/jobs/end_job', data),
+  generateReport: data => request.post('/jobs/generate_report', data, { responseType: 'arraybuffer' }),
 }

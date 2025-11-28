@@ -15,20 +15,20 @@
     <span class="mx-6 opacity-20">|</span>
 
     <div class="flex flex-shrink-0 items-center px-12 text-18">
-      <BeginnerGuide />
-
+      <!-- <BeginnerGuide /> -->
+<!-- 添加主题切换按钮 -->
       <ToggleTheme />
 
       <Fullscreen />
-
-      <i
+<!-- 添加GitHub和Gitee图标 -->
+      <!-- <i
         class="i-fe:github mr-16 cursor-pointer"
         @click="handleLinkClick('https://github.com/zclzone/vue-naive-admin/tree/2.x')"
       />
       <i
         class="i-me:gitee mr-16 cursor-pointer"
         @click="handleLinkClick('https://gitee.com/isme-admin/vue-naive-admin/tree/2.x')"
-      />
+      /> -->
 
       <ThemeSetting class="mr-16" />
 

@@ -87,7 +87,11 @@ export default {
             show:true,
             text: '病害(数量)-线路分布',
             x:'center',
-            y:'top'
+            y:'top',
+            textStyle: {
+              color: "white",
+              fontSize: 16,
+            }
           },
           dataset: {
             source: [
@@ -110,14 +114,14 @@ export default {
             type: "category",
             axisLabel: {
               rotate: 25,
-              color: "black",
+              color: "white",
               fontSize: 12,
             }
           },
           yAxis: {
             name:"病害数量",
             axisLabel: {
-              color: "black",
+              color: "white",
               fontSize: 12
             }
           },

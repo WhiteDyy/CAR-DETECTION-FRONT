@@ -200,4 +200,12 @@ async function onLoginSuccess(data = {}) {
     text-shadow: 0 2px 4px rgba(255, 255, 255, 0.2);
   }
 }
+
+
+/* 登录按钮样式 - 绿色背景 白色文字 */
+.login-btn {
+  background-color: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+  color: white !important;
+}
 </style>

@@ -13,7 +13,7 @@ import App from './App.vue'
 import { setupDirectives } from './directives'
 
 import { setupRouter } from './router'
-import { setupStore } from './store'
+import { setupStore, useAppStore } from './store'
 import { setupNaiveDiscreteApi } from './utils'
 import '@/styles/reset.css'
 import '@/styles/global.css'
@@ -23,6 +23,10 @@ import '@/assets/styles/fonts.css'
 async function bootstrap() {
   const app = createApp(App)
   setupStore(app)
+  // 默认启用暗色模式
+  const appStore = useAppStore()
+  document.documentElement.classList.add('dark')
+  appStore.isDark = true
   setupDirectives(app)
   await setupRouter(app)
   app.mount('#app')

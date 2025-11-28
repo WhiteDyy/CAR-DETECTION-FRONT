@@ -22,12 +22,19 @@
           <NButton class="add-btn" @click="goToCreate">
             新增
           </NButton>
+          <!-- 生成报表按钮 - 绿色背景 白色文字 -->
+          <NButton class="report-btn" @click="generateReport">
+            生成报表
+          </NButton>
         </NSpace>
       </NSpace>
 
       <!-- 新增的表格背景容器 -->
       <div class="table-background-container">
         <n-data-table
+          :row-key="row => row.id"
+          :checked-row-keys="selectedRowKeys"
+          @update:checked-row-keys="handleCheckChange"
           striped :columns="columns" :data="filteredTaskList" :pagination="pagination" :bordered="false"
           class="transparent-table" style="position: relative;"
         />
@@ -91,6 +98,7 @@ const filteredTaskList = computed(() => {
 })
 
 const columns = [
+  { type: 'selection' },
   { title: '任务名称', key: 'jobName' },
   { title: '线路类型', key: 'lineType' },
   { title: '方向', key: 'direction' },
@@ -217,6 +225,10 @@ function formatDateTime(dateTimeString) {
   })
 }
 
+const selectedRowKeys = ref([])
+function handleCheckChange(keys) {
+  selectedRowKeys.value = keys
+}
 const pagination = ref({
   page: 1,
   pageSize: 10,
@@ -225,6 +237,28 @@ const pagination = ref({
 
 const goToCreate = () => router.push('/taskmanage/task-create')
 const editTask = row => router.push(`/tasks/edit/${row.id}`)
+// 提交报表表单
+async function generateReport() {
+  try {
+    const response = await api.generateReport({ 
+      ids: selectedRowKeys.value
+    })
+    // 直接使用 ArrayBuffer 创建 Blob
+    const blob = new Blob([response], { type: 'application/zip' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `reports_${new Date().toISOString().slice(0,10)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    $message.success('报表生成成功')
+  } catch (error) {
+    console.error('生成报表失败:', error)
+    $message.error('生成报表失败')
+  }
+}
 
 onMounted(() => {
   updateHeight()
@@ -251,6 +285,13 @@ watch(() => filteredTaskList.value.length, updateHeight)
   background-color: #333333 !important;
   border-color: #333333 !important;
   color: #ffffff !important;
+}
+
+/* 生成报表按钮样式 - 绿色背景 白色文字 */
+.report-btn:deep(.n-button) {
+  background-color: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+  color: white !important;
 }
 
 /* 新增按钮样式 - 浅蓝色背景 深红色文字 */

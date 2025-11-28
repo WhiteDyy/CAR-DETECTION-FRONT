@@ -83,6 +83,10 @@ export default {
             // text: '同一线路病害分布',
             x: "center",
             y: "top",
+            textStyle: {
+              color: "white",
+              fontSize: 16,
+            },
           },
           legend: {
             show: true,
@@ -118,14 +122,14 @@ export default {
             type: "category",
             boundaryGap: false, // 刻度线与数据点居中对齐
             axisLabel: {
-              color: "black",
+              color: "white",
               fontSize: 12
             }
           },
           yAxis: {
             name: "病害数量",
             axisLabel: {
-              color: "black",
+              color: "white",
               fontSize: 12
             }
           },
