@@ -23,7 +23,7 @@
             新增
           </NButton>
           <!-- 生成报表按钮 - 绿色背景 白色文字 -->
-          <NButton class="report-btn" @click="generateReport">
+          <NButton class="report-btn" @click="showReportForm">
             生成报表
           </NButton>
         </NSpace>
@@ -40,13 +40,87 @@
         />
       </div>
     </div>
+
+    <!-- 生成报表表单对话框 -->
+    <n-modal v-model:show="showFormModal" :mask-closable="false">
+      <n-card
+        style="width: 600px; max-width: 90vw;"
+        title="生成报表"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <template #header-extra>
+          <n-button quaternary circle @click="showFormModal = false">
+            ×
+          </n-button>
+        </template>
+
+        <n-form
+          ref="reportFormRef"
+          :model="reportFormData"
+          :rules="formRules"
+          label-placement="left"
+          label-width="120px"
+        >
+          <div v-for="(form, index) in reportFormData.forms" :key="index" class="form-section">
+            <n-h3 prefix="bar" style="margin-top: 0;">
+              <n-text type="primary">任务 {{ index + 1 }}: {{ getTaskName(form.jobId) }}</n-text>
+            </n-h3>
+            
+            <n-form-item label="检验类别" :path="`forms[${index}].inspectionType`">
+              <n-select
+                v-model:value="form.inspectionType"
+                placeholder="请选择检验类别"
+                :options="inspectionTypeOptions"
+                clearable
+              />
+            </n-form-item>
+            
+            <n-form-item label="检验主要设备" :path="`forms[${index}].mainEquipment`">
+              <n-input
+                v-model:value="form.mainEquipment"
+                placeholder="请输入检验主要设备"
+                clearable
+              />
+            </n-form-item>
+            
+            <n-form-item label="检验项目" :path="`forms[${index}].inspectionItem`">
+              <n-select
+                v-model:value="form.inspectionItem"
+                type="textarea"
+                placeholder="请输入检验项目"
+                :options="inspectionTypeOptions2"
+                clearable
+              />
+            </n-form-item>
+            
+            <n-divider v-if="index < reportFormData.forms.length - 1" />
+          </div>
+        </n-form>
+
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showFormModal = false">取消</n-button>
+            <n-button type="primary" :loading="submitLoading" @click="handleFormSubmit">
+              提交并生成报表
+            </n-button>
+          </n-space>
+        </template>
+      </n-card>
+    </n-modal>
   </CommonPage>
 </template>
 
 <script setup>
 import { useTaskStore } from '@/store'
-import { NButton, NInput, NRadio, NRadioGroup, NSpace } from 'naive-ui'
-import { computed, h, ref } from 'vue'
+import { 
+  NButton, NInput, NRadio, NRadioGroup, NSpace, 
+  NForm, NFormItem, NSelect, NModal, NCard, 
+  NH3, NText, NDivider 
+} from 'naive-ui'
+import { computed, h, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from './api'
 
@@ -55,10 +129,55 @@ const searchQuery = ref('')
 const taskContainer = ref(null)
 const tableHeight = ref(0)
 
+// 生成报表相关状态
+const showFormModal = ref(false)
+const submitLoading = ref(false)
+const reportFormRef = ref(null)
+
+// 表单数据
+const reportFormData = ref({
+  forms: []
+})
+
+// 表单验证规则
+const formRules = {
+  forms: {
+    validator: (rule, value) => {
+      for (const form of value) {
+        if (!form.inspectionType) {
+          return new Error('请填写所有检验类别')
+        }
+        if (!form.mainEquipment) {
+          return new Error('请填写所有检验主要设备')
+        }
+        if (!form.inspectionItem) {
+          return new Error('请填写所有检验项目')
+        }
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
+  }
+}
+
+// 检验类别选项
+const inspectionTypeOptions = [
+  { label: '开发试验', value: '开发试验' },
+  { label: '线路检测', value: '线路检测' }
+]
+
+// 检验类别选项
+const inspectionTypeOptions2 = [
+  { label: '第一类参数', value: '第一类参数' },
+  { label: '第二类参数', value: '第二类参数' },
+  { label: '第三类参数', value: '第三类参数' },
+  { label: '第四类参数', value: '第四类参数' }
+]
+
 function updateHeight() {
   if (taskContainer.value) {
     const windowHeight = window.innerHeight
-    const containerHeight = windowHeight * 0.8 // 例如70%的窗口高度
+    const containerHeight = windowHeight * 0.8
     taskContainer.value.style.height = `${containerHeight}px`
   }
 }
@@ -80,13 +199,6 @@ async function getJobsData() {
 }
 
 const taskList = ref([])
-// const filteredTaskList = computed(() => {
-//   if (!searchQuery.value) return taskList.value;
-//   return taskList.value.filter((task) =>
-//     task.jobName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-//     task.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-//   );
-// });
 const filteredTaskList = computed(() => {
   if (!searchQuery.value)
     return taskList.value
@@ -96,6 +208,79 @@ const filteredTaskList = computed(() => {
     return jobName.includes(searchQuery.value.toLowerCase()) || description.includes(searchQuery.value.toLowerCase())
   })
 })
+
+// 获取任务名称
+const getTaskName = (jobId) => {
+  const task = taskList.value.find(t => t.id === jobId)
+  return task ? task.jobName : `任务 ${jobId}`
+}
+
+// 显示生成报表表单
+function showReportForm() {
+  if (selectedRowKeys.value.length === 0) {
+    $message.warning('请先选择要生成报表的任务')
+    return
+  }
+
+  // 初始化表单数据
+  reportFormData.value.forms = selectedRowKeys.value.map(jobId => ({
+    jobId,
+    inspectionType: '',
+    mainEquipment: '',
+    inspectionItem: ''
+  }))
+
+  showFormModal.value = true
+}
+
+// 处理表单提交
+async function handleFormSubmit() {
+  try {
+    submitLoading.value = true
+    
+    // 验证表单
+    await reportFormRef.value?.validate()
+    
+    // 提交表单数据并生成报表
+    await generateReport()
+    
+    showFormModal.value = false
+    $message.success('报表生成成功')
+  } catch (error) {
+    console.error('表单验证或报表生成失败:', error)
+    if (error.errors) {
+      $message.error('请填写完整的表单信息')
+    } else {
+      $message.error('报表生成失败')
+    }
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+// 修改后的生成报表方法
+async function generateReport() {
+  try {
+    const response = await api.generateReport({ 
+      ids: selectedRowKeys.value,
+      forms: reportFormData.value.forms // 添加表单数据
+    })
+    
+    // 直接使用 ArrayBuffer 创建 Blob
+    const blob = new Blob([response], { type: 'application/zip' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `reports_${new Date().toISOString().slice(0,10)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  } catch (error) {
+    console.error('生成报表失败:', error)
+    throw error // 抛出错误以便上层处理
+  }
+}
 
 const columns = [
   { type: 'selection' },
@@ -237,28 +422,6 @@ const pagination = ref({
 
 const goToCreate = () => router.push('/taskmanage/task-create')
 const editTask = row => router.push(`/tasks/edit/${row.id}`)
-// 提交报表表单
-async function generateReport() {
-  try {
-    const response = await api.generateReport({ 
-      ids: selectedRowKeys.value
-    })
-    // 直接使用 ArrayBuffer 创建 Blob
-    const blob = new Blob([response], { type: 'application/zip' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `reports_${new Date().toISOString().slice(0,10)}.zip`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-    $message.success('报表生成成功')
-  } catch (error) {
-    console.error('生成报表失败:', error)
-    $message.error('生成报表失败')
-  }
-}
 
 onMounted(() => {
   updateHeight()
@@ -274,34 +437,31 @@ watch(() => filteredTaskList.value.length, updateHeight)
 </script>
 
 <style scoped>
+/* 原有的样式保持不变 */
 .reset-btn:deep(.n-button) {
   background-color: #000000 !important;
   border-color: #ffffff !important;
   color: #ffffff !important;
 }
 
-/* 查询按钮样式 - 深灰色背景 白色文字 */
 .query-btn:deep(.n-button) {
   background-color: #333333 !important;
   border-color: #333333 !important;
   color: #ffffff !important;
 }
 
-/* 生成报表按钮样式 - 绿色背景 白色文字 */
 .report-btn:deep(.n-button) {
   background-color: #4CAF50 !important;
   border-color: #4CAF50 !important;
   color: white !important;
 }
 
-/* 新增按钮样式 - 浅蓝色背景 深红色文字 */
 .add-btn:deep(.n-button) {
   background-color: #66ccff !important;
   border-color: #66ccff !important;
   color: #8b0000 !important;
 }
 
-/* 公共按钮样式 */
 :deep(.n-button) {
   border-radius: 16px !important;
   min-width: 120px !important;
@@ -311,19 +471,16 @@ watch(() => filteredTaskList.value.length, updateHeight)
   transition: all 0.3s ease !important;
 }
 
-/* 悬停效果 */
 :deep(.n-button):hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 6px 12px rgba(15, 245, 226, 0.5) !important;
 }
 
-/* 按下效果 */
 :deep(.n-button):active {
   transform: translateY(0) !important;
   box-shadow: 0 2px 5px rgba(173, 12, 12, 0.4) !important;
 }
 
-/* 表格背景容器 */
 .table-background-container {
   padding: 2px;
   margin-top: 30px;
@@ -331,12 +488,12 @@ watch(() => filteredTaskList.value.length, updateHeight)
   border-radius: 18px;
   overflow: hidden;
   height: 100%;
-  /* 自适应高度 */
   background-image: url('/Frame.png');
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
 }
+
 .table-background-container :deep(.n-data-table),
 .table-background-container :deep(.n-data-table-wrapper),
 .table-background-container :deep(.n-data-table-table),
@@ -348,29 +505,21 @@ watch(() => filteredTaskList.value.length, updateHeight)
   background: transparent !important;
 }
 
-/* 透明表格样式 */
-
-/* 深度穿透选择器覆盖Naive UI默认样式 */
-
-/* 表头样式 */
 :deep(.n-data-table-thead .n-data-table-th) {
   background-color: transparent !important;
   border-bottom: 2px solid #06f5e1 !important;
   color: #ffffff !important;
 }
 
-/* 单元格样式 */
 :deep(.n-data-table-td) {
   border-bottom: 1px solid rgba(0, 170, 255, 0.3) !important;
   color: #ffffff !important;
 }
 
-/* 奇数行背景 */
 :deep(.n-data-table-tr.n-data-table-tr--striped) {
   background-color: rgba(31, 58, 61, 0.7) !important;
 }
 
-/* 行分隔伪元素 */
 :deep(.n-data-table-tr) {
   position: relative;
 }
@@ -385,7 +534,6 @@ watch(() => filteredTaskList.value.length, updateHeight)
   background: linear-gradient(to right, rgba(10, 138, 109, 0), rgba(48, 126, 151, 0.8), rgba(10, 138, 109, 0));
 }
 
-/* 分页器样式 */
 :deep(.n-pagination) {
   background: transparent !important;
   color: white !important;
@@ -395,5 +543,14 @@ watch(() => filteredTaskList.value.length, updateHeight)
   background: transparent !important;
   border: 1px solid #00aaff;
   color: white !important;
+}
+
+/* 新增的表单样式 */
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
 }
 </style>
