@@ -71,7 +71,7 @@ import { computed, h, nextTick, onMounted, ref } from 'vue'
 import api from './api.js'
 
 // 道岔型号列表
-const turnoutModels = ['SC330', 'SC400', 'SC500']
+const turnoutModels = ['50轨7号', '60轨9号', '75轨']
 
 // 当前选中的道岔型号索引
 const currentModelIndex = ref(0)

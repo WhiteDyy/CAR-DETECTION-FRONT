@@ -88,21 +88,36 @@ const chartOption = computed(() => ({
     confine: true,
   },
   grid: {
-    left: '1%',
-    right: '15%',
-    top: '15%',
-    bottom: '10%',
+    left: '12%',
+    right: '5%',
+    top: '18%',
+    bottom: '20%',
     containLabel: true,
   },
   xAxis: {
     type: 'category',
     data: chartData.value.xAxisData,
     name: props.xAxisName,
-    nameLocation: 'end',
-    nameGap: 20,
+    nameLocation: 'middle',
+    nameGap: 5,
     nameTextStyle: {
       fontSize: 12,
       color: '#FFFFFF',
+      padding: [5, 0, 0, 0],
+    },
+    axisLabel: {
+      show: true,
+      fontSize: 11,
+      color: '#FFFFFF',
+      rotate: 0,
+      interval: 'auto',
+      formatter: (value) => {
+        // 如果数据点太多，只显示部分标签
+        if (chartData.value.xAxisData.length > 50) {
+          return value % Math.ceil(chartData.value.xAxisData.length / 10) === 0 ? value : ''
+        }
+        return value
+      },
     },
     axisLine: {
       show: true,
@@ -123,10 +138,23 @@ const chartOption = computed(() => ({
     type: 'value',
     name: props.yAxisName,
     nameLocation: 'end',
-    nameGap: 10,
+    nameGap: 25,
     nameTextStyle: {
       fontSize: 12,
       color: '#FFFFFF',
+      padding: [0, 0, 0, 5],
+    },
+    axisLabel: {
+      show: true,
+      fontSize: 11,
+      color: '#FFFFFF',
+      formatter: (value) => {
+        // 格式化数值显示，避免过长
+        if (Math.abs(value) >= 1000) {
+          return (value / 1000).toFixed(1) + 'k'
+        }
+        return value.toFixed(1)
+      },
     },
     axisLine: {
       show: true,

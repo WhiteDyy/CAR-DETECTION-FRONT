@@ -32,7 +32,7 @@
             <NCard class="chart-card">
               <LineChart
                 :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence"
-                title="横向加速度" x-axis-name="编码器值" y-axis-name="m/s&sup2"
+                title="横向加速度" x-axis-name="编码器值" y-axis-name="m/s²"
               />
             </NCard>
           </NGi>
@@ -40,7 +40,7 @@
             <NCard class="chart-card">
               <LineChart
                 :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence"
-                title="横移加速度" x-axis-name="编码器值" y-axis-name="m/s&sup2"
+                title="横移加速度" x-axis-name="编码器值" y-axis-name="m/s²"
               />
             </NCard>
           </NGi>
@@ -48,7 +48,7 @@
             <NCard class="chart-card">
               <LineChart
                 :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence"
-                title="沉浮加速度" x-axis-name="编码器值" y-axis-name="m/s&#178"
+                title="沉浮加速度" x-axis-name="编码器值" y-axis-name="m/s²"
               />
             </NCard>
           </NGi>
@@ -136,17 +136,14 @@ const latestData = ref([])
 const maxPoints = 100
 const errorMessage = ref('')
 
+// 优化：只在数据长度变化时更新xAxisSequence，避免不必要的数组复制
 const updateCharts = debounce(() => {
-  xAxisSequence.value = Array.from({ length: chartData.groa.length }, (_, i) => i + 1)
-  chartData.groa = [...chartData.groa]
-  chartData.grob = [...chartData.grob]
-  chartData.dipmeter = [...chartData.dipmeter]
-  chartData.ga = [...chartData.ga]
-  chartData.gb = [...chartData.gb]
-  chartData.gc = [...chartData.gc]
-  chartData.cnt = [...chartData.cnt]
-  xAxisSequence.value = [...xAxisSequence.value]
-  latestData.value = [...latestData.value]
+  const currentLength = chartData.groa.length
+  if (xAxisSequence.value.length !== currentLength) {
+    xAxisSequence.value = Array.from({ length: currentLength }, (_, i) => i + 1)
+  }
+  // 触发响应式更新，但避免不必要的数组复制
+  // 由于chartData是reactive对象，直接修改数组元素会自动触发更新
 }, 200)
 
 const deviceStatusList = ref([
@@ -181,50 +178,62 @@ const sseUrl = '/api/sensor'
 const sse = new SSEService(sseUrl)
 
 function handleMessage(data) {
-  errorMessage.value = ''
-  console.log('查看传感器数据:', data)
-  if (!data || typeof data.sequence !== 'number') {
-    return
+  try {
+    errorMessage.value = ''
+    if (!data || typeof data.sequence !== 'number') {
+      return
+    }
+    const parsedData = {
+      sequence: data.sequence,
+      ga: Number(data.ga) || 0,
+      gb: Number(data.gb) || 0,
+      gc: Number(data.gc) || 0,
+      cnt: Number(data.cnt) || 0,
+      dipmeter: Number(data.dipmeter) || 0,
+      groa: Number(data.groa) || 0,
+      grob: Number(data.grob) || 0,
+      startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
+    }
+    
+    // 添加数据
+    chartData.groa.push(parsedData.groa)
+    chartData.grob.push(parsedData.grob)
+    chartData.dipmeter.push(parsedData.dipmeter)
+    chartData.ga.push(parsedData.ga)
+    chartData.gb.push(parsedData.gb)
+    chartData.gc.push(parsedData.gc)
+    chartData.cnt.push(parsedData.cnt)
+    sequence.value.push(parsedData.sequence)
+    
+    // 保持数据在最大点数以内
+    if (chartData.groa.length > maxPoints) {
+      chartData.groa.shift()
+      chartData.grob.shift()
+      chartData.dipmeter.shift()
+      chartData.ga.shift()
+      chartData.gb.shift()
+      chartData.gc.shift()
+      chartData.cnt.shift()
+      sequence.value.shift()
+    }
+    
+    // 更新最新数据（保留最近5条）
+    latestData.value.push(parsedData)
+    if (latestData.value.length > 5) {
+      latestData.value.shift()
+    }
+    
+    updateCharts()
+  } catch (error) {
+    console.error('处理传感器数据时出错:', error)
+    errorMessage.value = '数据处理错误，请检查数据格式'
   }
-  const parsedData = {
-    sequence: data.sequence,
-    ga: Number(data.ga) || 0,
-    gb: Number(data.gb) || 0,
-    gc: Number(data.gc) || 0,
-    cnt: Number(data.cnt) || 0,
-    dipmeter: Number(data.dipmeter) || 0,
-    groa: Number(data.groa) || 0,
-    grob: Number(data.grob) || 0,
-    startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
-  }
-  chartData.groa.push(parsedData.groa)
-  chartData.grob.push(parsedData.grob)
-  chartData.dipmeter.push(parsedData.dipmeter)
-  chartData.ga.push(parsedData.ga)
-  chartData.gb.push(parsedData.gb)
-  chartData.gc.push(parsedData.gc)
-  chartData.cnt.push(parsedData.cnt)
-  sequence.value.push(parsedData.sequence)
-  if (chartData.groa.length > maxPoints) {
-    chartData.groa.shift()
-    chartData.grob.shift()
-    chartData.dipmeter.shift()
-    chartData.ga.shift()
-    chartData.gb.shift()
-    chartData.gc.shift()
-    chartData.cnt.shift()
-    sequence.value.shift()
-  }
-  latestData.value.push(parsedData)
-  if (latestData.value.length > 5) {
-    latestData.value = latestData.value.slice(-5)
-  }
-  console.warn('表格数据长度:', latestData.value.length, 'chartData length:', chartData.groa.length)
-  updateCharts()
 }
 
 function resetStateOnReconnect() {
+  // 重连时清空最新数据，但保留图表数据以便连续显示
   latestData.value = []
+  errorMessage.value = ''
 }
 
 onMounted(() => {
@@ -259,9 +268,11 @@ onUnmounted(() => {
 
 .chart-card {
   height: 300px;
+  min-height: 300px;
   background-color: rgb(19, 27, 27);
   border: none;
   /* 移除单个卡片的边框 */
+  overflow: hidden;
 }
 
 .table-container {
@@ -291,14 +302,20 @@ tr:nth-child(even) {
 
 .device-status-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  /* 每行 7 个卡片 */
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  /* 响应式布局，最小宽度160px */
   gap: 16px;
   padding: 20px;
   margin-top: 20px;
   background-color: rgb(32, 44, 51);
   border-radius: 14px;
   border: 1px solid #fffefd;
+}
+
+@media (max-width: 768px) {
+  .device-status-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
 }
 
 .device-card {

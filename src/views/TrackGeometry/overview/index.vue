@@ -37,14 +37,29 @@
 
       <div v-show="currentTab === 'main'">
         <n-layout has-sider>
-          <n-layout-sider content-style="padding: 5px;" width="100px">
+          <n-layout-sider content-style="padding: 0;" width="120px" class="parameter-sider">
             <div class="sider-content">
-              <n-button
-                v-for="parameter in parameterList" :key="parameter" :bordered="false"
-                style="width: 80px;"
+              <div
+                v-for="(parameter, index) in parameterList" 
+                :key="parameter" 
+                class="parameter-item"
+                :class="{ 'parameter-item-even': index % 2 === 0 }"
+                :style="{ 
+                  height: `${70 + 12}px`,
+                  top: `${15 + (70 + 12) * index}px`,
+                  '--param-color': colorMap[parameter]
+                }"
+                @mouseenter="handleParameterHover(parameter, true)"
+                @mouseleave="handleParameterHover(parameter, false)"
               >
-                {{ parameter }}
-              </n-button>
+                <div class="parameter-color-bar" :style="{ backgroundColor: colorMap[parameter] }"></div>
+                <div class="parameter-content">
+                  <div class="parameter-name">{{ parameter }}</div>
+                  <div v-if="getCurrentValue(parameter) !== null" class="parameter-value">
+                    {{ formatValue(getCurrentValue(parameter)) }}
+                  </div>
+                </div>
+              </div>
             </div>
           </n-layout-sider>
           <n-layout>
@@ -72,6 +87,38 @@ import TrendChart from './trendChart.vue'
 // tab切换状态
 const currentTab = ref('main')
 
+// 参数悬停状态
+const hoveredParameter = ref(null)
+
+// 处理参数悬停
+function handleParameterHover(parameter, isEnter) {
+  hoveredParameter.value = isEnter ? parameter : null
+  // 这里可以触发图表的高亮效果（如果需要的话）
+}
+
+// 获取当前值（最后一个数据点）
+function getCurrentValue(parameter) {
+  const data = chartData.value[parameter]
+  if (!data || data.length === 0) return null
+  return data[data.length - 1]
+}
+
+// 格式化数值显示
+function formatValue(value) {
+  if (value === null || value === undefined) return '-'
+  if (Math.abs(value) >= 1000) {
+    return value.toFixed(0)
+  } else if (Math.abs(value) >= 100) {
+    return value.toFixed(0)
+  } else if (Math.abs(value) >= 10) {
+    return value.toFixed(1)
+  } else if (Math.abs(value) >= 1) {
+    return value.toFixed(2)
+  } else {
+    return value.toFixed(3)
+  }
+}
+
 // 线路信息
 const trackType = ref('正线')
 const trackModel = ref('60kg/m')
@@ -91,18 +138,18 @@ const parameterList = ref([
   '侧面磨耗',
 ])
 
-// 颜色映射
+// 颜色映射 - 使用更协调的配色方案
 const colorMap = {
-  轨距: '#ff7f0e',
-  轨距变化率: '#ff7f0e',
-  左高低: '#1f77b4',
-  右高低: '#1f77b4',
-  左轨向: '#2ca02c',
-  右轨向: '#2ca02c',
-  水平: '#d62728',
-  三角坑: '#9467bd',
-  垂直磨耗: '#8c564b',
-  侧面磨耗: '#8c564b',
+  轨距: '#FF6B6B',           // 珊瑚红
+  轨距变化率: '#FF8E53',      // 橙红a
+  左高低: '#4ECDC4',          // 青绿色
+  右高低: '#45B7D1',          // 天蓝色
+  左轨向: '#96CEB4',          // 薄荷绿
+  右轨向: '#FFEAA7',          // 淡黄色
+  水平: '#DDA15E',            // 金色
+  三角坑: '#A8E6CF',          // 浅绿色
+  垂直磨耗: '#FFB6C1',        // 粉红色
+  侧面磨耗: '#C7CEEA',        // 淡紫色
 }
 
 // 图表核心数据
@@ -121,6 +168,62 @@ const chartData = ref({
 })
 const tagPositions = ref([])
 const sleeperPositions = ref([])
+
+// ========== 模拟数据（用于展示，调试完成后可删除或注释） ==========
+const useMockData = ref(true) // 设置为 false 可关闭模拟数据
+
+// if (useMockData.value) {
+//   // 生成模拟里程数据（0-1000米，每0.1米一个点）
+//   const mockMileage = []
+//   for (let i = 0; i <= 1000; i += 0.1) {
+//     mockMileage.push(Number(i.toFixed(1)))
+//   }
+//   xAxisData.value = mockMileage
+
+//   // 生成模拟参数数据
+//   const generateMockData = (baseValue, amplitude, frequency, offset = 0) => {
+//     return mockMileage.map((mileage, index) => {
+//       const value = baseValue + 
+//         amplitude * Math.sin((mileage + offset) * frequency) +
+//         amplitude * 0.3 * Math.sin((mileage + offset) * frequency * 2.5) +
+//         (Math.random() - 0.5) * amplitude * 0.2
+//       return Number(value.toFixed(2))
+//     })
+//   }
+
+//   chartData.value = {
+//     轨距: generateMockData(1435, 3, 0.01), // 1435mm ± 3mm
+//     轨距变化率: generateMockData(0, 0.5, 0.02), // ±0.5 mm/m
+//     左高低: generateMockData(0, 2, 0.015), // ±2mm
+//     右高低: generateMockData(0, 2, 0.018), // ±2mm
+//     左轨向: generateMockData(0, 1.5, 0.012), // ±1.5mm
+//     右轨向: generateMockData(0, 1.5, 0.014), // ±1.5mm
+//     水平: generateMockData(0, 1, 0.016), // ±1mm
+//     三角坑: generateMockData(0, 0.8, 0.013), // ±0.8mm
+//     垂直磨耗: generateMockData(0.5, 0.3, 0.01), // 0.5mm ± 0.3mm
+//     侧面磨耗: generateMockData(0.3, 0.2, 0.011), // 0.3mm ± 0.2mm
+//   }
+
+//   // 生成模拟轨枕和标签位置
+//   sleeperPositions.value = []
+//   tagPositions.value = []
+  
+//   for (let i = 0; i <= 1000; i += 0.6) { // 每0.6米一个轨枕
+//     sleeperPositions.value.push({
+//       mileage: Number(i.toFixed(1)),
+//       displayId: Math.floor(i / 0.6) + 1,
+//       uniqueId: `sleeper-${i}`,
+//     })
+//   }
+
+//   for (let i = 0; i <= 1000; i += 100) { // 每100米一个标签
+//     tagPositions.value.push({
+//       mileage: Number(i.toFixed(1)),
+//       id: Math.floor(i / 100) + 1,
+//     })
+//   }
+// }
+// ========== 模拟数据结束 ==========
 
 // 计数器与里程状态
 
@@ -365,13 +468,96 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.parameter-sider {
+  position: relative;
+  background: linear-gradient(to right, #fafafa 0%, #ffffff 100%);
+  border-right: 1px solid #e8e8e8;
+}
+
 .sider-content {
+  position: relative;
+  height: 100%;
+}
+
+.parameter-item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.parameter-item-even {
+  background-color: rgba(250, 250, 250, 0.6);
+}
+
+.parameter-item:hover {
+  background-color: rgba(245, 245, 245, 0.9);
+  border-left-color: var(--param-color);
+  transform: translateX(2px);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+.parameter-color-bar {
+  width: 4px;
+  flex-shrink: 0;
+  background: var(--param-color);
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.parameter-item:hover .parameter-color-bar {
+  opacity: 1;
+  width: 5px;
+}
+
+.parameter-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 820px;
-  padding-top: 42px;
-  padding-bottom: 14px;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 6px;
+  gap: 4px;
+}
+
+.parameter-name {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.parameter-item:hover .parameter-name {
+  color: var(--param-color);
+  font-weight: 600;
+}
+
+.parameter-value {
+  font-size: 11px;
+  color: #666;
+  font-weight: 400;
+  text-align: center;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 50px;
+  transition: all 0.3s ease;
+}
+
+.parameter-item:hover .parameter-value {
+  color: var(--param-color);
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 500;
 }
 
 /* Styles below were not used by active elements and are kept for reference if needed */

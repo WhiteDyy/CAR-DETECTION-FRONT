@@ -9,17 +9,17 @@
         />
         <NSpace>
           <!-- 重置按钮 - 黑色背景 白色文字 -->
-          <NButton class="reset-btn" @click="goToCreate">
+          <NButton class="reset-btn" @click="handleReset">
             重置
           </NButton>
 
           <!-- 查询按钮 - 深灰色背景 白色文字 -->
-          <NButton class="query-btn" @click="goToCreate">
+          <NButton class="query-btn" @click="handleQuery">
             查询
           </NButton>
 
           <!-- 新增按钮 - 浅蓝色背景 深红色文字 -->
-          <NButton class="add-btn" @click="goToCreate">
+          <NButton class="add-btn" @click="showCreateDialog">
             新增
           </NButton>
           <!-- 生成报表按钮 - 绿色背景 白色文字 -->
@@ -41,10 +41,108 @@
       </div>
     </div>
 
+    <!-- 新增任务对话框 -->
+    <n-modal v-model:show="showCreateModal" :mask-closable="false">
+      <n-card
+        style="width: 600px; max-width: 90vw;"
+        title="新增任务"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <template #header-extra>
+          <n-button quaternary circle @click="showCreateModal = false">
+            ×
+          </n-button>
+        </template>
+
+        <n-form
+          ref="createFormRef"
+          :model="createFormData"
+          :rules="createFormRules"
+          label-placement="left"
+          label-width="100px"
+        >
+          <n-form-item label="任务名称" path="jobName">
+            <n-input
+              v-model:value="createFormData.jobName"
+              placeholder="请输入任务名称"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="线路类型" path="lineType">
+            <n-select
+              v-model:value="createFormData.lineType"
+              placeholder="请选择线路类型"
+              :options="lineTypeOptions"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="方向" path="direction">
+            <n-select
+              v-model:value="createFormData.direction"
+              placeholder="请选择方向"
+              :options="directionOptions"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="操作人员" path="operator">
+            <n-input
+              v-model:value="createFormData.operator"
+              placeholder="请输入操作人员"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="设备编号" path="deviceId">
+            <n-input
+              v-model:value="createFormData.deviceId"
+              placeholder="请输入设备编号"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="速度" path="speed">
+            <n-select
+              v-model:value="createFormData.speed"
+              placeholder="请选择或输入速度 (km/h)"
+              :options="speedOptions"
+              filterable
+              tag
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="任务描述" path="description">
+            <n-input
+              v-model:value="createFormData.description"
+              type="textarea"
+              placeholder="请输入任务描述（可选）"
+              :rows="3"
+              clearable
+            />
+          </n-form-item>
+        </n-form>
+
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showCreateModal = false">取消</n-button>
+            <n-button type="primary" :loading="createLoading" @click="handleCreateSubmit">
+              确定
+            </n-button>
+          </n-space>
+        </template>
+      </n-card>
+    </n-modal>
+
     <!-- 生成报表表单对话框 -->
     <n-modal v-model:show="showFormModal" :mask-closable="false">
       <n-card
-        style="width: 600px; max-width: 90vw;"
+        style="width: 700px; max-width: 90vw;"
         title="生成报表"
         :bordered="false"
         size="huge"
@@ -57,6 +155,19 @@
           </n-button>
         </template>
 
+        <!-- 显示选中的任务列表 -->
+        <div style="margin-bottom: 20px;">
+          <n-text type="info" style="font-size: 14px;">已选择 {{ selectedRowKeys.length }} 个任务：</n-text>
+          <n-tag
+            v-for="jobId in selectedRowKeys"
+            :key="jobId"
+            style="margin: 4px 4px 4px 0;"
+            type="info"
+          >
+            {{ getTaskName(jobId) }}
+          </n-tag>
+        </div>
+
         <n-form
           ref="reportFormRef"
           :model="reportFormData"
@@ -64,40 +175,55 @@
           label-placement="left"
           label-width="120px"
         >
-          <div v-for="(form, index) in reportFormData.forms" :key="index" class="form-section">
-            <n-h3 prefix="bar" style="margin-top: 0;">
-              <n-text type="primary">任务 {{ index + 1 }}: {{ getTaskName(form.jobId) }}</n-text>
-            </n-h3>
-            
-            <n-form-item label="检验类别" :path="`forms[${index}].inspectionType`">
-              <n-select
-                v-model:value="form.inspectionType"
-                placeholder="请选择检验类别"
-                :options="inspectionTypeOptions"
-                clearable
-              />
-            </n-form-item>
-            
-            <n-form-item label="检验主要设备" :path="`forms[${index}].mainEquipment`">
-              <n-input
-                v-model:value="form.mainEquipment"
-                placeholder="请输入检验主要设备"
-                clearable
-              />
-            </n-form-item>
-            
-            <n-form-item label="检验项目" :path="`forms[${index}].inspectionItem`">
-              <n-select
-                v-model:value="form.inspectionItem"
-                type="textarea"
-                placeholder="请输入检验项目"
-                :options="inspectionTypeOptions2"
-                clearable
-              />
-            </n-form-item>
-            
-            <n-divider v-if="index < reportFormData.forms.length - 1" />
-          </div>
+          <n-form-item label="检验类别" path="inspectionType">
+            <n-select
+              v-model:value="reportFormData.inspectionType"
+              placeholder="请选择检验类别"
+              :options="inspectionTypeOptions"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="检验主要设备" path="mainEquipment">
+            <n-input
+              v-model:value="reportFormData.mainEquipment"
+              placeholder="请输入检验主要设备（多个设备用逗号分隔）"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="检验项目" path="inspectionItem">
+            <n-select
+              v-model:value="reportFormData.inspectionItem"
+              placeholder="请选择检验项目"
+              :options="inspectionTypeOptions2"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="检测地点" path="inspectionLocation">
+            <n-input
+              v-model:value="reportFormData.inspectionLocation"
+              placeholder="请输入检测地点"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="检测人员" path="inspector">
+            <n-input
+              v-model:value="reportFormData.inspector"
+              placeholder="请输入检测人员（多个人员用逗号分隔）"
+              clearable
+            />
+          </n-form-item>
+          
+          <n-form-item label="委托单位地址" path="clientAddress">
+            <n-input
+              v-model:value="reportFormData.clientAddress"
+              placeholder="请输入委托单位地址（可选）"
+              clearable
+            />
+          </n-form-item>
         </n-form>
 
         <template #footer>
@@ -118,9 +244,9 @@ import { useTaskStore } from '@/store'
 import { 
   NButton, NInput, NRadio, NRadioGroup, NSpace, 
   NForm, NFormItem, NSelect, NModal, NCard, 
-  NH3, NText, NDivider 
+  NH3, NText, NDivider, NDatePicker 
 } from 'naive-ui'
-import { computed, h, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, h, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from './api'
 
@@ -129,33 +255,116 @@ const searchQuery = ref('')
 const taskContainer = ref(null)
 const tableHeight = ref(0)
 
+// 新增任务相关状态
+const showCreateModal = ref(false)
+const createLoading = ref(false)
+const createFormRef = ref(null)
+const createFormData = ref({
+  jobName: '',
+  lineType: '',
+  direction: '',
+  operator: '',
+  deviceId: '',
+  speed: '',
+  description: ''
+})
+
+// 新增任务表单验证规则
+const createFormRules = {
+  jobName: {
+    required: true,
+    message: '请输入任务名称',
+    trigger: ['blur', 'input']
+  },
+  lineType: {
+    required: true,
+    message: '请选择线路类型',
+    trigger: ['blur', 'change']
+  },
+  direction: {
+    required: true,
+    message: '请选择方向',
+    trigger: ['blur', 'change']
+  },
+  operator: {
+    required: true,
+    message: '请输入操作人员',
+    trigger: ['blur', 'input']
+  },
+  deviceId: {
+    required: true,
+    message: '请输入设备编号',
+    trigger: ['blur', 'input']
+  },
+  speed: {
+    required: true,
+    message: '请选择或输入速度',
+    trigger: ['blur', 'change']
+  }
+}
+
+// 线路类型选项
+const lineTypeOptions = [
+  { label: '正线', value: '正线' },
+  { label: '道岔', value: '道岔' }
+]
+
+// 方向选项
+const directionOptions = [
+  { label: '上行', value: '上行' },
+  { label: '下行', value: '下行' }
+]
+
+// 速度选项
+const speedOptions = [
+  { label: '5 km/h', value: '5' },
+  { label: '10 km/h', value: '10' },
+  { label: '15 km/h', value: '15' },
+  { label: '20 km/h', value: '20' },
+  { label: '25 km/h', value: '25' },
+  { label: '30 km/h', value: '30' }
+]
+
 // 生成报表相关状态
 const showFormModal = ref(false)
 const submitLoading = ref(false)
 const reportFormRef = ref(null)
 
-// 表单数据
+// 表单数据 - 统一表单，应用到所有选中任务
 const reportFormData = ref({
-  forms: []
+  inspectionType: '',
+  mainEquipment: '',
+  inspectionItem: '',
+  inspectionLocation: '',
+  inspector: '',
+  clientAddress: ''
 })
 
 // 表单验证规则
 const formRules = {
-  forms: {
-    validator: (rule, value) => {
-      for (const form of value) {
-        if (!form.inspectionType) {
-          return new Error('请填写所有检验类别')
-        }
-        if (!form.mainEquipment) {
-          return new Error('请填写所有检验主要设备')
-        }
-        if (!form.inspectionItem) {
-          return new Error('请填写所有检验项目')
-        }
-      }
-      return true
-    },
+  inspectionType: {
+    required: true,
+    message: '请选择检验类别',
+    trigger: ['blur', 'change']
+  },
+  mainEquipment: {
+    required: true,
+    message: '请输入检验主要设备',
+    trigger: ['blur', 'input']
+  },
+  inspectionItem: {
+    required: true,
+    message: '请选择检验项目',
+    trigger: ['blur', 'change']
+  },
+  inspectionLocation: {
+    required: true,
+    message: '请输入检测地点',
+    trigger: ['blur', 'input']
+  },
+  inspector: {
+    required: true,
+    message: '请输入检测人员',
     trigger: ['blur', 'input']
   }
 }
@@ -186,9 +395,39 @@ async function getJobsData() {
   try {
     const response = await api.getJobsList()
     if (response.data) {
-      taskList.value = response.data.pageData
-      pagination.value.itemCount = response.data.length
-      $message.success('获取作业数据成功')
+      const data = response.data.pageData || response.data.list || []
+      // 确保 startTime 和 endTime 正确处理（可能是 null、空字符串或其他格式）
+      taskList.value = data.map(task => {
+        // 清理 startTime：如果为 null、undefined、空字符串或无效值，设置为 null
+        let startTime = task.startTime
+        if (startTime === null || startTime === undefined || startTime === '') {
+          startTime = null
+        } else {
+          const startTimeStr = String(startTime).trim()
+          if (startTimeStr === '' || startTimeStr === 'null' || startTimeStr === 'undefined') {
+            startTime = null
+          }
+        }
+        
+        // 清理 endTime：如果为 null、undefined、空字符串或无效值，设置为 null
+        let endTime = task.endTime
+        if (endTime === null || endTime === undefined || endTime === '') {
+          endTime = null
+        } else {
+          const endTimeStr = String(endTime).trim()
+          if (endTimeStr === '' || endTimeStr === 'null' || endTimeStr === 'undefined') {
+            endTime = null
+          }
+        }
+        
+        return {
+          ...task,
+          startTime,
+          endTime,
+        }
+      })
+      pagination.value.itemCount = response.data.total || response.data.length || taskList.value.length
+      // 移除成功提示，避免频繁刷新时提示过多
       return response.data
     }
   }
@@ -222,13 +461,15 @@ function showReportForm() {
     return
   }
 
-  // 初始化表单数据
-  reportFormData.value.forms = selectedRowKeys.value.map(jobId => ({
-    jobId,
+  // 重置表单数据（统一表单，应用到所有选中任务）
+  reportFormData.value = {
     inspectionType: '',
     mainEquipment: '',
-    inspectionItem: ''
-  }))
+    inspectionItem: '',
+    inspectionLocation: '',
+    inspector: '',
+    clientAddress: ''
+  }
 
   showFormModal.value = true
 }
@@ -261,17 +502,33 @@ async function handleFormSubmit() {
 // 修改后的生成报表方法
 async function generateReport() {
   try {
+    // 将统一表单数据应用到所有选中任务
+    // 注意：后端现在只需要一个表单数据（统一表单），但为了兼容性，我们仍然传递一个数组
+    const forms = [{
+      jobId: String(selectedRowKeys.value[0]), // 使用第一个任务ID作为占位符
+      inspectionType: reportFormData.value.inspectionType,
+      mainEquipment: reportFormData.value.mainEquipment,
+      inspectionItem: reportFormData.value.inspectionItem,
+      inspectionLocation: reportFormData.value.inspectionLocation,
+      inspector: reportFormData.value.inspector,
+      clientAddress: reportFormData.value.clientAddress
+    }]
+    
     const response = await api.generateReport({ 
       ids: selectedRowKeys.value,
-      forms: reportFormData.value.forms // 添加表单数据
+      forms: forms // 统一表单数据
     })
     
-    // 直接使用 ArrayBuffer 创建 Blob
-    const blob = new Blob([response], { type: 'application/zip' })
+    // 直接使用 ArrayBuffer 创建 Blob（docx文件）
+    const blob = new Blob([response], { 
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+    })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `reports_${new Date().toISOString().slice(0,10)}.zip`
+    // 生成文件名（使用当前日期）
+    const dateStr = new Date().toISOString().slice(0,10).replace(/-/g, '')
+    a.download = `report_${dateStr}.docx`
     document.body.appendChild(a)
     a.click()
     window.URL.revokeObjectURL(url)
@@ -296,20 +553,105 @@ const columns = [
   },
   { title: '操作人员', key: 'operator' },
   { title: '设备编号', key: 'deviceId' },
+  { 
+    title: '速度', 
+    key: 'speed',
+    render(row) {
+      return row.speed ? `${row.speed} km/h` : '-'
+    }
+  },
   { title: '创建时间', key: 'createdAt', render: row => formatDateTime(row.createdAt) },
   {
     title: '操作',
     key: 'actions',
     render(row) {
-      return h(
-        NSpace,
-        {},
-        [
-          h(NButton, { size: 'small', onClick: () => editTask(row) }, { default: () => '编辑' }),
-          h(NButton, { size: 'small', type: 'error', onClick: () => handleDelete(row.id) }, { default: () => '删除' }),
-          h(NButton, { size: 'small', type: 'primary', onClick: () => startDetection(row) }, { default: () => '开始检测' }),
-        ],
+      const taskStore = useTaskStore()
+      const currentTask = taskStore.getCurrentTask()
+      const isCurrentTask = currentTask && currentTask.id === row.id
+      
+      // 判断任务状态：严格检查 startTime 和 endTime
+      // 如果 startTime 为 null、undefined、空字符串或无效值，认为未开始
+      const hasStartTime = row.startTime != null 
+        && row.startTime !== '' 
+        && row.startTime !== undefined
+        && String(row.startTime).trim() !== ''
+        && String(row.startTime).trim() !== 'null'
+        && String(row.startTime).trim() !== 'undefined'
+      
+      // 如果 endTime 为 null、undefined、空字符串或无效值，认为未结束
+      const hasEndTime = row.endTime != null 
+        && row.endTime !== '' 
+        && row.endTime !== undefined
+        && String(row.endTime).trim() !== ''
+        && String(row.endTime).trim() !== 'null'
+        && String(row.endTime).trim() !== 'undefined'
+      
+      const isStarted = hasStartTime && !hasEndTime // 已开始但未结束
+      const isEnded = hasEndTime // 已结束
+      
+      // 调试信息（开发时可以查看）
+      // console.log('任务状态判断:', {
+      //   id: row.id,
+      //   jobName: row.jobName,
+      //   startTime: row.startTime,
+      //   endTime: row.endTime,
+      //   hasStartTime,
+      //   hasEndTime,
+      //   isStarted,
+      //   isEnded
+      // })
+      
+      const buttons = []
+      
+      // 编辑按钮（已结束的任务不能编辑）
+      if (!isEnded) {
+        buttons.push(
+          h(NButton, { 
+            size: 'small', 
+            onClick: () => editTask(row) 
+          }, { default: () => '编辑' })
+        )
+      }
+      
+      // 删除按钮
+      buttons.push(
+        h(NButton, { 
+          size: 'small', 
+          type: 'error', 
+          onClick: () => handleDelete(row.id) 
+        }, { default: () => '删除' })
       )
+      
+      // 开始检测按钮（只有未开始的任务才显示）
+      if (!isStarted && !isEnded) {
+        buttons.push(
+          h(NButton, { 
+            size: 'small', 
+            type: 'primary', 
+            onClick: () => startDetection(row) 
+          }, { default: () => '开始检测' })
+        )
+      }
+      
+      // 结束检测按钮（只有已开始且未结束的任务才显示）
+      if (isStarted && !isEnded) {
+        buttons.push(
+          h(NButton, { 
+            size: 'small', 
+            type: 'warning', 
+            onClick: () => endDetection(row) 
+          }, { default: () => '结束检测' })
+        )
+      }
+      
+      // 状态提示（已结束的任务显示状态）
+      if (isEnded) {
+        buttons.push(
+          h('span', { style: { color: '#999', fontSize: '12px' } }, '已结束')
+        )
+      }
+      
+      return h(NSpace, {}, buttons)
     },
   },
 ]
@@ -326,20 +668,27 @@ async function handleDelete(id, confirmOptions) {
     negativeText: '取消',
     async onPositiveClick() {
       try {
-        const d = this
-        d.loading = true
+        // 调用后端API删除任务
+        const response = await api.deleteJob(id)
+        
+        if (response.code !== 0) {
+          throw new Error(response.message || '删除失败')
+        }
+        
+        // 删除成功后，从列表中移除
         const index = taskList.value.findIndex(task => task.id === id)
         if (index !== -1) {
           taskList.value.splice(index, 1)
           pagination.value.itemCount = taskList.value.length
         }
+        
         $message.success('删除成功')
-        d.loading = false
       }
       catch (error) {
-        console.error(error)
-        $message.error('删除失败!')
-        this.loading = false
+        console.error('删除任务失败:', error)
+        $message.error(error.message || '删除失败!')
+        // 抛出错误以阻止对话框关闭
+        throw error
       }
     },
     ...confirmOptions,
@@ -347,6 +696,22 @@ async function handleDelete(id, confirmOptions) {
 }
 
 function startDetection(row) {
+  // 先检查任务状态
+  const hasEndTime = row.endTime != null && row.endTime !== '' && String(row.endTime).trim() !== ''
+  const hasStartTime = row.startTime != null && row.startTime !== '' && String(row.startTime).trim() !== ''
+  const isStarted = hasStartTime && !hasEndTime
+  const isEnded = hasEndTime
+  
+  if (isStarted) {
+    $message.warning('该任务已开始，不能重复开始')
+    return
+  }
+  
+  if (isEnded) {
+    $message.warning('该任务已结束，不能再次开始')
+    return
+  }
+  
   window.$dialog?.success({
     title: '选择检测类型',
     content: () => h(NRadioGroup, {
@@ -371,7 +736,7 @@ function startDetection(row) {
         }
       }
       catch (error) {
-        $message.error(`操作失败${error.message}`)
+        $message.error(`操作失败: ${error.message}`)
       }
     },
   })
@@ -379,22 +744,110 @@ function startDetection(row) {
 
 async function createTaskRecord(task) {
   const taskStore = useTaskStore()
-  console.log('创建任务记录:', task)
+  console.log('开始检测任务:', task)
+  
+  // 检查任务是否已开始（有开始时间且没有结束时间）
+  const hasEndTime = task.endTime != null && task.endTime !== '' && String(task.endTime).trim() !== ''
+  const hasStartTime = task.startTime != null && task.startTime !== '' && String(task.startTime).trim() !== ''
+  if (hasStartTime && !hasEndTime) {
+    throw new Error('该任务已开始，不能重复开始')
+  }
+  
+  // 检查任务是否已结束
+  if (hasEndTime) {
+    throw new Error('该任务已结束，不能再次开始')
+  }
+  
+  // 格式化当前时间为ISO格式，作为开始时间
+  const formatDateTimeForApi = (timestamp) => {
+    if (!timestamp) {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hours = String(now.getHours()).padStart(2, '0')
+      const minutes = String(now.getMinutes()).padStart(2, '0')
+      const seconds = String(now.getSeconds()).padStart(2, '0')
+      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+    }
+    const date = new Date(timestamp)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+  }
+  
+  // 调用开始检测API，传入任务ID和当前时间作为开始时间
   const response = await api.startCurrentJob({
+    id: task.id, // 使用id字段，后端会根据id更新现有任务
     jobId: task.id,
-    startTime: task.startTime,
-    startStation: task.startStation,
+    jobName: task.jobName,
+    startTime: formatDateTimeForApi(Date.now()), // 设置为当前时间
     operator: task.operator,
-    jobStatus: 'started',
-    createdAt: new Date().toISOString(),
+    deviceId: task.deviceId,
+    lineType: task.lineType,
+    direction: task.direction,
+    speed: task.speed,
   })
+  
   if (response.code !== 0) {
-    throw new Error('创建任务记录失败')
+    throw new Error(response.message || '开始检测失败')
   }
   else {
-    $message.success('任务记录创建成功')
+    $message.success('检测已开始')
+    // 更新任务状态到store
     taskStore.setCurrentTask(response.data)
+    // 刷新任务列表以显示更新后的开始时间
+    await getJobsData()
   }
+}
+
+// 结束检测
+async function endDetection(row) {
+  const taskStore = useTaskStore()
+  const currentTask = taskStore.getCurrentTask()
+  
+  // 检查是否是当前正在进行的任务
+  if (!currentTask || currentTask.id !== row.id) {
+    // 如果不是当前任务，需要先设置当前任务
+    taskStore.setCurrentTask(row)
+  }
+  
+  window.$dialog?.warning({
+    content: '确定要结束本次检测吗？',
+    title: '结束检测确认',
+    positiveText: '确定',
+    negativeText: '取消',
+    async onPositiveClick() {
+      try {
+        // 调用结束作业API
+        const response = await api.stopCurrentJob({
+          id: row.id,
+          ...row
+        })
+        
+        if (response.code !== 0) {
+          throw new Error(response.message || '结束检测失败')
+        }
+        
+        // 清除当前任务状态
+        taskStore.clearCurrentTask()
+        $message.success('检测已成功结束')
+        
+        // 刷新任务列表
+        await getJobsData()
+      }
+      catch (error) {
+        console.error('结束检测失败:', error)
+        $message.error(error.message || '结束检测失败')
+        // 抛出错误以阻止对话框关闭
+        throw error
+      }
+    },
+  })
 }
 
 function formatDateTime(dateTimeString) {
@@ -419,6 +872,83 @@ const pagination = ref({
   pageSize: 10,
   itemCount: taskList.value.length,
 })
+
+// 显示新增任务对话框
+function showCreateDialog() {
+  // 重置表单数据（不包含开始时间和结束时间，这些由开始/结束检测按钮自动设置）
+  createFormData.value = {
+    jobName: '',
+    lineType: '',
+    direction: '',
+    operator: '',
+    deviceId: '',
+    speed: '',
+    description: ''
+  }
+  showCreateModal.value = true
+}
+
+// 处理新增任务提交
+async function handleCreateSubmit() {
+  try {
+    createLoading.value = true
+    
+    // 等待DOM更新后再验证
+    await nextTick()
+    
+    // 验证表单
+    await createFormRef.value?.validate()
+    
+    // 构建请求数据（新增任务时，不设置startTime和endTime，这些由开始/结束检测按钮自动设置）
+    const requestData = {
+      jobName: createFormData.value.jobName,
+      lineType: createFormData.value.lineType,
+      direction: createFormData.value.direction,
+      operator: createFormData.value.operator,
+      deviceId: createFormData.value.deviceId,
+      speed: createFormData.value.speed,
+      description: createFormData.value.description || ''
+      // 注意：不包含 startTime 和 endTime，这些字段由开始/结束检测按钮自动设置
+    }
+    
+    // 调用API创建任务
+    const response = await api.createJob(requestData)
+    
+    if (response.code !== 0) {
+      throw new Error(response.message || '创建任务失败')
+    }
+    
+    $message.success('任务创建成功')
+    showCreateModal.value = false
+    
+    // 刷新任务列表
+    await getJobsData()
+  } catch (error) {
+    console.error('创建任务失败:', error)
+    if (error.errors) {
+      $message.error('请填写完整的表单信息')
+    } else {
+      $message.error(error.message || '创建任务失败')
+    }
+  } finally {
+    createLoading.value = false
+  }
+}
+
+// 重置功能：清空搜索条件并重新加载数据
+async function handleReset() {
+  searchQuery.value = ''
+  await getJobsData()
+  $message.success('已重置搜索条件')
+}
+
+// 查询功能：重新加载数据（搜索过滤由computed自动处理）
+async function handleQuery() {
+  await getJobsData()
+  if (searchQuery.value) {
+    $message.success('查询完成')
+  }
+}
 
 const goToCreate = () => router.push('/taskmanage/task-create')
 const editTask = row => router.push(`/tasks/edit/${row.id}`)
@@ -552,5 +1082,71 @@ watch(() => filteredTaskList.value.length, updateHeight)
 
 .form-section:last-child {
   margin-bottom: 0;
+}
+
+/* 新增任务对话框样式 */
+:deep(.n-modal) {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+:deep(.n-card) {
+  background: linear-gradient(135deg, rgba(36, 34, 30, 0.95) 0%, rgba(28, 52, 54, 0.95) 100%) !important;
+  border: 1px solid rgba(6, 245, 225, 0.3) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+:deep(.n-card-header) {
+  border-bottom: 1px solid rgba(6, 245, 225, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.n-card__title) {
+  color: #06f5e1 !important;
+  font-weight: 600 !important;
+}
+
+:deep(.n-form-item-label) {
+  color: #ffffff !important;
+}
+
+:deep(.n-input),
+:deep(.n-select),
+:deep(.n-date-picker) {
+  background-color: rgba(36, 34, 30, 0.6) !important;
+  border: 1px solid rgba(6, 245, 225, 0.3) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+:deep(.n-input:focus),
+:deep(.n-select:focus),
+:deep(.n-date-picker:focus) {
+  border-color: #06f5e1 !important;
+  box-shadow: 0 0 0 2px rgba(6, 245, 225, 0.2) !important;
+}
+
+:deep(.n-input__input-el),
+:deep(.n-select__input) {
+  color: #ffffff !important;
+}
+
+:deep(.n-input__placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:deep(.n-button) {
+  border-radius: 8px !important;
+}
+
+:deep(.n-button--primary-type) {
+  background-color: #06f5e1 !important;
+  border-color: #06f5e1 !important;
+  color: #1f3a3d !important;
+}
+
+:deep(.n-button--primary-type:hover) {
+  background-color: #05d4c4 !important;
+  border-color: #05d4c4 !important;
 }
 </style>
