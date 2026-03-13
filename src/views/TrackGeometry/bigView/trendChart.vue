@@ -56,7 +56,8 @@ const chartOption = computed(() => {
       left: '10%',
       right: '5%',
       top: '20%', // 留出标题空间
-      bottom: '15%', // 确保 X 轴可见
+      // 加大底部留白，防止刻度遮挡横坐标名称
+      bottom: '22%',
       containLabel: true,
     },
     xAxis: {
@@ -64,6 +65,9 @@ const chartOption = computed(() => {
       data: props.xAxisData,
       axisLine: { show: true },
       axisTick: { show: true },
+      axisLabel: {
+        margin: 6,
+      },
       splitLine: {
         show: true,
         lineStyle: { type: 'dashed', width: 1 },

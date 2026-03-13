@@ -118,7 +118,8 @@ const chartOption = computed(() => {
         show: index === props.parameters.length - 1,
         color: '#666',
         fontSize: 11,
-        margin: 8,
+        // 适当下移底部刻度，避免与横坐标名称重叠
+        margin: 10,
       },
     }))
     .concat({

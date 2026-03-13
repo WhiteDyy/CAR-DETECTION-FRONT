@@ -3,57 +3,114 @@
     <div class="dashboard">
       <NAlert v-if="errorMessage" type="error" :title="errorMessage" />
       <div class="charts-container">
-        <NGrid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="2" :y-gap="2">
+        <NGrid cols="s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" :x-gap="4" :y-gap="4">
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('groa')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
                 :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence"
-                title="点头陀螺" x-axis-name="编码器值" y-axis-name="幅度/s"
+                title="X向陀螺" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('grob')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
                 :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence"
-                title="摇头陀螺" x-axis-name="编码器值" y-axis-name="幅度/s"
+                title="Z向陀螺" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('dipmeter')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
                 :data="chartData" parameter="dipmeter" color="rgb(75, 192, 192)" :x-axis-data="xAxisSequence"
-                title="倾角仪" x-axis-name="编码器值" y-axis-name="度"
+                title="倾角仪" x-axis-name="里程" y-axis-name="角度/°"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('encoder')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
-                :data="chartData" parameter="ga" color="rgb(255, 159, 64)" :x-axis-data="xAxisSequence"
-                title="横向加速度" x-axis-name="编码器值" y-axis-name="m/s²"
+                :data="chartData"
+                :x-axis-data="xAxisSequence"
+                :series-configs="encoderSeries"
+                title="编码器" x-axis-name="时间" y-axis-name="脉冲数/次"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('ultrasonic')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
-                :data="chartData" parameter="gb" color="rgb(153, 102, 255)" :x-axis-data="xAxisSequence"
-                title="横移加速度" x-axis-name="编码器值" y-axis-name="m/s²"
+                :data="chartData"
+                :x-axis-data="mileageAxis"
+                :series-configs="ultrasonicSeries"
+                title="超声" x-axis-name="里程" y-axis-name="电压/V"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
           <NGi>
             <NCard class="chart-card">
+              <div class="chart-actions">
+                <n-button size="tiny" secondary @click="openEnlarge('laser')">
+                  放大
+                </n-button>
+              </div>
               <LineChart
-                :data="chartData" parameter="gc" color="rgb(255, 205, 86)" :x-axis-data="xAxisSequence"
-                title="沉浮加速度" x-axis-name="编码器值" y-axis-name="m/s²"
+                :data="chartData"
+                :x-axis-data="mileageAxis"
+                :series-configs="laserSeries"
+                title="点激光" x-axis-name="里程" y-axis-name="电压/V"
+                :max-display-points="600"
               />
             </NCard>
           </NGi>
         </NGrid>
       </div>
+
+      <n-modal v-model:show="enlargeVisible" preset="card" :style="{ width: '92vw', maxWidth: '1200px' }">
+        <template #header>
+          {{ enlargeTitle }}
+        </template>
+        <div class="enlarge-chart">
+          <LineChart
+            v-bind="enlargeChartProps"
+            :data="chartData"
+            :x-axis-data="enlargeXAxisData"
+            :show-data-zoom="true"
+            :max-display-points="5000"
+          />
+        </div>
+      </n-modal>
 
       <div class="device-status-grid">
         <div v-for="(device, index) in deviceStatusList" :key="index" class="device-card">
@@ -117,23 +174,31 @@
 import CommonPage from '@/components/common/CommonPage.vue'
 import SSEService from '@/utils/sse/sseService'
 import { debounce } from 'lodash'
-import { NAlert, NCard, NGi, NGrid } from 'naive-ui'
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { NAlert, NButton, NCard, NGi, NGrid, NModal } from 'naive-ui'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import LineChart from './LineChart.vue'
 
 const chartData = reactive({
   groa: [],
   grob: [],
   dipmeter: [],
-  ga: [],
-  gb: [],
-  gc: [],
+  // 编码器
+  encoderLeft: [],
+  encoderRight: [],
+  // 超声
+  ultrasonicLeft: [],
+  ultrasonicRight: [],
+  // 点激光
+  laserLeft: [],
+  laserRight: [],
+  // 辅助字段
   cnt: [],
+  mileage: [],
 })
 const sequence = ref([])
 const xAxisSequence = ref([])
+const mileageAxis = ref([])
 const latestData = ref([])
-const maxPoints = 100
 const errorMessage = ref('')
 
 // 优化：只在数据长度变化时更新xAxisSequence，避免不必要的数组复制
@@ -147,8 +212,7 @@ const updateCharts = debounce(() => {
 }, 200)
 
 const deviceStatusList = ref([
-  { name: '编码器1', label: '速度值：', icon: '/encoder.png', type: 'status', online: false },
-  { name: '编码器2', label: '速度值：', icon: '/encoder.png', type: 'status', online: true },
+  
   { name: '激光传感器1', label: '离线状态', icon: '/laser.png', online: false },
   { name: '激光传感器2', label: '离线状态', icon: '/laser.png', online: false },
   { name: '激光传感器3', label: '离线状态', icon: '/laser.png', online: false },
@@ -177,53 +241,73 @@ function updateLabel(device) {
 const sseUrl = '/api/sensor'
 const sse = new SSEService(sseUrl)
 
+function appendPoint(parsedData) {
+  // 添加数据
+  chartData.groa.push(parsedData.groa)
+  chartData.grob.push(parsedData.grob)
+  chartData.dipmeter.push(parsedData.dipmeter)
+  chartData.encoderLeft.push(parsedData.encoderLeft)
+  chartData.encoderRight.push(parsedData.encoderRight)
+  chartData.ultrasonicLeft.push(parsedData.ultrasonicLeft)
+  chartData.ultrasonicRight.push(parsedData.ultrasonicRight)
+  chartData.laserLeft.push(parsedData.laserLeft)
+  chartData.laserRight.push(parsedData.laserRight)
+  chartData.cnt.push(parsedData.cnt)
+  chartData.mileage.push(parsedData.mileage)
+  sequence.value.push(parsedData.sequence)
+
+  // 更新最新数据（保留最近5条）
+  latestData.value.push(parsedData)
+  if (latestData.value.length > 5) {
+    latestData.value.shift()
+  }
+}
+
+function parsePoint(data) {
+  if (!data || typeof data.sequence !== 'number') {
+    return null
+  }
+  return {
+    sequence: data.sequence,
+    // 编码器
+    encoderLeft: Number(data.codee41) || 0,
+    encoderRight: Number(data.codee42) || 0,
+    // 超声：gaccel_2 -> 左, gaccel_3 -> 右
+    ultrasonicLeft: Number(data.gaccel_2) || 0,
+    ultrasonicRight: Number(data.gaccel_3) || 0,
+    // 点激光：gaccel_0 -> 左, gaccel_1 -> 右
+    laserLeft: Number(data.gaccel_0) || 0,
+    laserRight: Number(data.gaccel_1) || 0,
+    cnt: Number(data.cnt) || 0,
+    dipmeter: Number(data.dipmeter) || 0,
+    // X/Y 向陀螺：显示为原始值 / 840000
+    groa: (Number(data.groa) || 0) / 840000,
+    grob: (Number(data.grob) || 0) / 840000,
+    mileage: Number(data.mileage) || 0,
+    startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
+  }
+}
+
 function handleMessage(data) {
   try {
     errorMessage.value = ''
-    if (!data || typeof data.sequence !== 'number') {
-      return
-    }
-    const parsedData = {
-      sequence: data.sequence,
-      ga: Number(data.ga) || 0,
-      gb: Number(data.gb) || 0,
-      gc: Number(data.gc) || 0,
-      cnt: Number(data.cnt) || 0,
-      dipmeter: Number(data.dipmeter) || 0,
-      groa: Number(data.groa) || 0,
-      grob: Number(data.grob) || 0,
-      startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
+    // 后端可能按批次发送（数组）或单条发送（对象），两种都兼容
+    const points = Array.isArray(data) ? data : [data]
+    for (const point of points) {
+      const parsed = parsePoint(point)
+      if (parsed) {
+        appendPoint(parsed)
+      }
     }
     
-    // 添加数据
-    chartData.groa.push(parsedData.groa)
-    chartData.grob.push(parsedData.grob)
-    chartData.dipmeter.push(parsedData.dipmeter)
-    chartData.ga.push(parsedData.ga)
-    chartData.gb.push(parsedData.gb)
-    chartData.gc.push(parsedData.gc)
-    chartData.cnt.push(parsedData.cnt)
-    sequence.value.push(parsedData.sequence)
-    
-    // 保持数据在最大点数以内
-    if (chartData.groa.length > maxPoints) {
-      chartData.groa.shift()
-      chartData.grob.shift()
-      chartData.dipmeter.shift()
-      chartData.ga.shift()
-      chartData.gb.shift()
-      chartData.gc.shift()
-      chartData.cnt.shift()
-      sequence.value.shift()
-    }
-    
-    // 更新最新数据（保留最近5条）
-    latestData.value.push(parsedData)
-    if (latestData.value.length > 5) {
-      latestData.value.shift()
-    }
-    
+    // 更新X轴序列（时间序号）
     updateCharts()
+
+    // 更新里程X轴（直接使用里程值）
+    const currentLength = chartData.mileage.length
+    if (mileageAxis.value.length !== currentLength) {
+      mileageAxis.value = chartData.mileage.slice()
+    }
   } catch (error) {
     console.error('处理传感器数据时出错:', error)
     errorMessage.value = '数据处理错误，请检查数据格式'
@@ -234,6 +318,65 @@ function resetStateOnReconnect() {
   // 重连时清空最新数据，但保留图表数据以便连续显示
   latestData.value = []
   errorMessage.value = ''
+}
+
+const encoderSeries = [
+  { key: 'encoderLeft', name: '编码器左', color: 'rgb(255, 159, 64)' },
+  { key: 'encoderRight', name: '编码器右', color: 'rgb(255, 205, 86)' },
+]
+
+const ultrasonicSeries = [
+  { key: 'ultrasonicLeft', name: '超声左', color: 'rgb(153, 102, 255)' },
+  { key: 'ultrasonicRight', name: '超声右', color: 'rgb(99, 132, 255)' },
+]
+
+const laserSeries = [
+  { key: 'laserLeft', name: '点激光左', color: 'rgb(75, 192, 192)' },
+  { key: 'laserRight', name: '点激光右', color: 'rgb(255, 99, 132)' },
+]
+
+const enlargeVisible = ref(false)
+const enlargeKey = ref('')
+
+const enlargeTitle = computed(() => {
+  const map = {
+    groa: 'X向陀螺（放大）',
+    grob: 'Z向陀螺（放大）',
+    dipmeter: '倾角仪（放大）',
+    encoder: '编码器（放大）',
+    ultrasonic: '超声（放大）',
+    laser: '点激光（放大）',
+  }
+  return map[enlargeKey.value] || '折线图（放大）'
+})
+
+const enlargeXAxisData = computed(() => {
+  if (enlargeKey.value === 'ultrasonic' || enlargeKey.value === 'laser') return mileageAxis.value
+  return xAxisSequence.value
+})
+
+const enlargeChartProps = computed(() => {
+  switch (enlargeKey.value) {
+    case 'groa':
+      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: 'X向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+    case 'grob':
+      return { parameter: 'grob', color: 'rgb(54, 162, 235)', title: 'Z向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+    case 'dipmeter':
+      return { parameter: 'dipmeter', color: 'rgb(75, 192, 192)', title: '倾角仪', xAxisName: '里程', yAxisName: '角度/°' }
+    case 'encoder':
+      return { seriesConfigs: encoderSeries, title: '编码器', xAxisName: '时间', yAxisName: '脉冲数/次' }
+    case 'ultrasonic':
+      return { seriesConfigs: ultrasonicSeries, title: '超声', xAxisName: '里程', yAxisName: '电压/V' }
+    case 'laser':
+      return { seriesConfigs: laserSeries, title: '点激光', xAxisName: '里程', yAxisName: '电压/V' }
+    default:
+      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: 'X向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+  }
+})
+
+function openEnlarge(key) {
+  enlargeKey.value = key
+  enlargeVisible.value = true
 }
 
 onMounted(() => {
@@ -253,7 +396,7 @@ onUnmounted(() => {
 
 <style scoped>
 .dashboard {
-  padding: 10px;
+  padding: 6px 10px;
   margin: auto;
   background-color: rgb(19, 21, 27);
 }
@@ -261,18 +404,30 @@ onUnmounted(() => {
 .charts-container {
   border: 1px solid #ffffff;
   /* 白色边框包裹所有折线图 */
-  padding: 10px;
-  border-radius: 16px;
+  padding: 6px 8px;
+  border-radius: 12px;
   /* 圆角边框 */
 }
 
 .chart-card {
-  height: 300px;
-  min-height: 300px;
+  height: 340px;
+  min-height: 340px;
   background-color: rgb(19, 27, 27);
   border: none;
   /* 移除单个卡片的边框 */
   overflow: hidden;
+  position: relative;
+}
+
+.chart-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.enlarge-chart {
+  height: 70vh;
 }
 
 .table-container {

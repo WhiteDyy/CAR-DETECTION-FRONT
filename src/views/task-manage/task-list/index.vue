@@ -1,6 +1,6 @@
 <template>
   <CommonPage>
-    <div ref="taskContainer" style="padding: 20px; border-radius: 20px;">
+    <div ref="taskContainer" class="task-container" style="padding: 20px; border-radius: 20px;">
       <!-- 搜索和按钮区域保持不变 -->
       <NSpace justify="space-between" align="center">
         <NInput
@@ -26,17 +26,32 @@
           <NButton class="report-btn" @click="showReportForm">
             生成报表
           </NButton>
+          <!-- 下载边缘机数据 -->
+          <NButton class="download-btn" @click="downloadEdgeData">
+            下载数据
+          </NButton>
         </NSpace>
       </NSpace>
 
       <!-- 新增的表格背景容器 -->
       <div class="table-background-container">
         <n-data-table
+          remote
           :row-key="row => row.id"
           :checked-row-keys="selectedRowKeys"
           @update:checked-row-keys="handleCheckChange"
-          striped :columns="columns" :data="filteredTaskList" :pagination="pagination" :bordered="false"
-          class="transparent-table" style="position: relative;"
+          @update:page="handlePageChange"
+          @update:page-size="handlePageSizeChange"
+          striped
+          size="small"
+          table-layout="fixed"
+          :columns="columns"
+          :data="filteredTaskList"
+          :pagination="pagination"
+          :max-height="tableHeight"
+          :bordered="false"
+          class="transparent-table"
+          style="position: relative;"
         />
       </div>
     </div>
@@ -117,15 +132,7 @@
             />
           </n-form-item>
           
-          <n-form-item label="任务描述" path="description">
-            <n-input
-              v-model:value="createFormData.description"
-              type="textarea"
-              placeholder="请输入任务描述（可选）"
-              :rows="3"
-              clearable
-            />
-          </n-form-item>
+
         </n-form>
 
         <template #footer>
@@ -244,11 +251,13 @@ import { useTaskStore } from '@/store'
 import { 
   NButton, NInput, NRadio, NRadioGroup, NSpace, 
   NForm, NFormItem, NSelect, NModal, NCard, 
-  NH3, NText, NDivider, NDatePicker 
+  NH3, NText, NDivider, NDatePicker, NPagination 
 } from 'naive-ui'
 import { computed, h, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from './api'
+
+const EDGE_DATA_DOWNLOAD_URL = import.meta.env.VITE_EDGE_DATA_DOWNLOAD_URL
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -261,12 +270,11 @@ const createLoading = ref(false)
 const createFormRef = ref(null)
 const createFormData = ref({
   jobName: '',
-  lineType: '',
-  direction: '',
-  operator: '',
-  deviceId: '',
-  speed: '',
-  description: ''
+  lineType: '正线',
+  direction: '上行',
+  operator: '测试',
+  deviceId: 'dev001',
+  speed: '5'
 })
 
 // 新增任务表单验证规则
@@ -275,31 +283,6 @@ const createFormRules = {
     required: true,
     message: '请输入任务名称',
     trigger: ['blur', 'input']
-  },
-  lineType: {
-    required: true,
-    message: '请选择线路类型',
-    trigger: ['blur', 'change']
-  },
-  direction: {
-    required: true,
-    message: '请选择方向',
-    trigger: ['blur', 'change']
-  },
-  operator: {
-    required: true,
-    message: '请输入操作人员',
-    trigger: ['blur', 'input']
-  },
-  deviceId: {
-    required: true,
-    message: '请输入设备编号',
-    trigger: ['blur', 'input']
-  },
-  speed: {
-    required: true,
-    message: '请选择或输入速度',
-    trigger: ['blur', 'change']
   }
 }
 
@@ -317,6 +300,7 @@ const directionOptions = [
 
 // 速度选项
 const speedOptions = [
+  { label: '0 km/h', value: '0' },
   { label: '5 km/h', value: '5' },
   { label: '10 km/h', value: '10' },
   { label: '15 km/h', value: '15' },
@@ -388,16 +372,37 @@ function updateHeight() {
     const windowHeight = window.innerHeight
     const containerHeight = windowHeight * 0.8
     taskContainer.value.style.height = `${containerHeight}px`
+    // 预留顶部查询区和分页区高度，让表格主体可滚动
+    tableHeight.value = Math.max(containerHeight - 220, 300)
   }
 }
 
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  showSizePicker: true,
+  pageSizes: [10, 20, 50],
+  // 后端分页时需要总条数
+  itemCount: 0,
+})
+
 async function getJobsData() {
   try {
-    const response = await api.getJobsList()
+    // 后端分页参数约定：pageNo / pageSize
+    const response = await api.getJobsList({
+      pageNo: pagination.value.page,
+      pageSize: pagination.value.pageSize,
+    })
     if (response.data) {
-      const data = response.data.pageData || response.data.list || []
+      const data = response.data.list || response.data.pageData || []
+      // 按照 id 倒序排序（id 大的在前面）
+      const sortedData = [...data].sort((a, b) => {
+        const idA = Number(a.id) || 0
+        const idB = Number(b.id) || 0
+        return idB - idA
+      })
       // 确保 startTime 和 endTime 正确处理（可能是 null、空字符串或其他格式）
-      taskList.value = data.map(task => {
+      taskList.value = sortedData.map(task => {
         // 清理 startTime：如果为 null、undefined、空字符串或无效值，设置为 null
         let startTime = task.startTime
         if (startTime === null || startTime === undefined || startTime === '') {
@@ -426,7 +431,8 @@ async function getJobsData() {
           endTime,
         }
       })
-      pagination.value.itemCount = response.data.total || response.data.length || taskList.value.length
+      // 设置总条数，用于后端分页
+      pagination.value.itemCount = response.data.total ?? data.length
       // 移除成功提示，避免频繁刷新时提示过多
       return response.data
     }
@@ -447,6 +453,7 @@ const filteredTaskList = computed(() => {
     return jobName.includes(searchQuery.value.toLowerCase()) || description.includes(searchQuery.value.toLowerCase())
   })
 })
+
 
 // 获取任务名称
 const getTaskName = (jobId) => {
@@ -472,6 +479,15 @@ function showReportForm() {
   }
 
   showFormModal.value = true
+}
+
+function downloadEdgeData() {
+  if (!EDGE_DATA_DOWNLOAD_URL) {
+    $message.error('未配置边缘机下载地址（VITE_EDGE_DATA_DOWNLOAD_URL）')
+    return
+  }
+  // 用“跳转下载”触发浏览器下载（不走 XHR/fetch，通常不会被 CORS 限制）
+  window.location.href = EDGE_DATA_DOWNLOAD_URL
 }
 
 // 处理表单提交
@@ -540,30 +556,38 @@ async function generateReport() {
 }
 
 const columns = [
-  { type: 'selection' },
-  { title: '任务名称', key: 'jobName' },
-  { title: '线路类型', key: 'lineType' },
-  { title: '方向', key: 'direction' },
+  { type: 'selection', width: 60 },
+  { title: '任务名称', key: 'jobName', width: 150, ellipsis: { tooltip: true } },
+  { title: '线路类型', key: 'lineType', width: 80 },
+  { title: '方向', key: 'direction', width: 50 },
   {
     title: '执行时间',
     key: 'timeRange',
+    width: 260,
     render(row) {
       return `${formatDateTime(row.startTime)} ~ ${formatDateTime(row.endTime)}`
     },
   },
-  { title: '操作人员', key: 'operator' },
-  { title: '设备编号', key: 'deviceId' },
-  { 
-    title: '速度', 
+  { title: '操作人员', key: 'operator', width: 80, ellipsis: { tooltip: true } },
+  { title: '设备编号', key: 'deviceId', width: 140, ellipsis: { tooltip: true } },
+  {
+    title: '速度',
     key: 'speed',
+    width: 90,
     render(row) {
       return row.speed ? `${row.speed} km/h` : '-'
-    }
+    },
   },
-  { title: '创建时间', key: 'createdAt', render: row => formatDateTime(row.createdAt) },
+  {
+    title: '创建时间',
+    key: 'createdAt',
+    width: 160,
+    render: row => formatDateTime(row.createdAt),
+  },
   {
     title: '操作',
     key: 'actions',
+    width: 320,
     render(row) {
       const taskStore = useTaskStore()
       const currentTask = taskStore.getCurrentTask()
@@ -606,41 +630,45 @@ const columns = [
       // 编辑按钮（已结束的任务不能编辑）
       if (!isEnded) {
         buttons.push(
-          h(NButton, { 
-            size: 'small', 
-            onClick: () => editTask(row) 
-          }, { default: () => '编辑' })
+          h(NButton, {
+            size: 'small',
+            class: 'action-btn',
+            onClick: () => editTask(row),
+          }, { default: () => '编辑' }),
         )
       }
       
       // 删除按钮
       buttons.push(
-        h(NButton, { 
-          size: 'small', 
-          type: 'error', 
-          onClick: () => handleDelete(row.id) 
-        }, { default: () => '删除' })
+        h(NButton, {
+          size: 'small',
+          type: 'error',
+          class: 'action-btn',
+          onClick: () => handleDelete(row.id),
+        }, { default: () => '删除' }),
       )
       
       // 开始检测按钮（只有未开始的任务才显示）
       if (!isStarted && !isEnded) {
         buttons.push(
-          h(NButton, { 
-            size: 'small', 
-            type: 'primary', 
-            onClick: () => startDetection(row) 
-          }, { default: () => '开始检测' })
+          h(NButton, {
+            size: 'small',
+            type: 'primary',
+            class: 'action-btn',
+            onClick: () => startDetection(row),
+          }, { default: () => '开始检测' }),
         )
       }
       
       // 结束检测按钮（只有已开始且未结束的任务才显示）
       if (isStarted && !isEnded) {
         buttons.push(
-          h(NButton, { 
-            size: 'small', 
-            type: 'warning', 
-            onClick: () => endDetection(row) 
-          }, { default: () => '结束检测' })
+          h(NButton, {
+            size: 'small',
+            type: 'warning',
+            class: 'action-btn',
+            onClick: () => endDetection(row),
+          }, { default: () => '结束检测' }),
         )
       }
       
@@ -651,7 +679,16 @@ const columns = [
         )
       }
       
-      return h(NSpace, {}, buttons)
+      return h(
+        NSpace,
+        {
+          wrap: false,
+          size: 8,
+          align: 'center',
+          justify: 'start',
+        },
+        buttons,
+      )
     },
   },
 ]
@@ -675,13 +712,12 @@ async function handleDelete(id, confirmOptions) {
           throw new Error(response.message || '删除失败')
         }
         
-        // 删除成功后，从列表中移除
-        const index = taskList.value.findIndex(task => task.id === id)
-        if (index !== -1) {
-          taskList.value.splice(index, 1)
-          pagination.value.itemCount = taskList.value.length
+        // 删除成功后，重新从后端拉取当前页数据
+        // 如果当前页只剩一条且被删掉，并且不是第一页，则回到上一页再请求
+        if (taskList.value.length === 1 && pagination.value.page > 1) {
+          pagination.value.page -= 1
         }
-        
+        await getJobsData()
         $message.success('删除成功')
       }
       catch (error) {
@@ -867,23 +903,30 @@ const selectedRowKeys = ref([])
 function handleCheckChange(keys) {
   selectedRowKeys.value = keys
 }
-const pagination = ref({
-  page: 1,
-  pageSize: 10,
-  itemCount: taskList.value.length,
-})
+
+// 切换页码（后端分页）
+function handlePageChange(page) {
+  pagination.value.page = page
+  getJobsData()
+}
+
+// 切换每页数量（后端分页）
+function handlePageSizeChange(pageSize) {
+  pagination.value.pageSize = pageSize
+  pagination.value.page = 1
+  getJobsData()
+}
 
 // 显示新增任务对话框
 function showCreateDialog() {
   // 重置表单数据（不包含开始时间和结束时间，这些由开始/结束检测按钮自动设置）
   createFormData.value = {
     jobName: '',
-    lineType: '',
-    direction: '',
-    operator: '',
-    deviceId: '',
-    speed: '',
-    description: ''
+    lineType: '正线',
+    direction: '上行',
+    operator: '测试',
+    deviceId: 'dev001',
+    speed: '5'
   }
   showCreateModal.value = true
 }
@@ -906,8 +949,7 @@ async function handleCreateSubmit() {
       direction: createFormData.value.direction,
       operator: createFormData.value.operator,
       deviceId: createFormData.value.deviceId,
-      speed: createFormData.value.speed,
-      description: createFormData.value.description || ''
+      speed: createFormData.value.speed
       // 注意：不包含 startTime 和 endTime，这些字段由开始/结束检测按钮自动设置
     }
     
@@ -921,7 +963,8 @@ async function handleCreateSubmit() {
     $message.success('任务创建成功')
     showCreateModal.value = false
     
-    // 刷新任务列表
+    // 新增后默认回到第一页，并重新从后端拉取数据
+    pagination.value.page = 1
     await getJobsData()
   } catch (error) {
     console.error('创建任务失败:', error)
@@ -938,12 +981,14 @@ async function handleCreateSubmit() {
 // 重置功能：清空搜索条件并重新加载数据
 async function handleReset() {
   searchQuery.value = ''
+  pagination.value.page = 1
   await getJobsData()
   $message.success('已重置搜索条件')
 }
 
 // 查询功能：重新加载数据（搜索过滤由computed自动处理）
 async function handleQuery() {
+  pagination.value.page = 1
   await getJobsData()
   if (searchQuery.value) {
     $message.success('查询完成')
@@ -964,6 +1009,10 @@ onUnmounted(() => {
 })
 
 watch(() => filteredTaskList.value.length, updateHeight)
+
+watch(searchQuery, () => {
+  pagination.value.page = 1
+})
 </script>
 
 <style scoped>
@@ -984,6 +1033,12 @@ watch(() => filteredTaskList.value.length, updateHeight)
   background-color: #4CAF50 !important;
   border-color: #4CAF50 !important;
   color: white !important;
+}
+
+.download-btn:deep(.n-button) {
+  background-color: #5b6cff !important;
+  border-color: #5b6cff !important;
+  color: #ffffff !important;
 }
 
 .add-btn:deep(.n-button) {
@@ -1011,13 +1066,26 @@ watch(() => filteredTaskList.value.length, updateHeight)
   box-shadow: 0 2px 5px rgba(173, 12, 12, 0.4) !important;
 }
 
+:deep(.action-btn.n-button) {
+  min-width: 90px !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+}
+
+.task-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .table-background-container {
   padding: 2px;
   margin-top: 30px;
   position: relative;
   border-radius: 18px;
   overflow: hidden;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background-image: url('/Frame.png');
   background-size: 100% 100%;
   background-position: center;

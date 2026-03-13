@@ -88,12 +88,9 @@ import TrendChart from './trendChart.vue'
 const currentTab = ref('main')
 
 // 参数悬停状态
-const hoveredParameter = ref(null)
-
 // 处理参数悬停
-function handleParameterHover(parameter, isEnter) {
-  hoveredParameter.value = isEnter ? parameter : null
-  // 这里可以触发图表的高亮效果（如果需要的话）
+function handleParameterHover(_parameter, _isEnter) {
+  // 预留：后续可在这里联动图表高亮
 }
 
 // 获取当前值（最后一个数据点）
@@ -134,8 +131,6 @@ const parameterList = ref([
   '右轨向',
   '水平',
   '三角坑',
-  '垂直磨耗',
-  '侧面磨耗',
 ])
 
 // 颜色映射 - 使用更协调的配色方案
@@ -148,8 +143,6 @@ const colorMap = {
   右轨向: '#FFEAA7',          // 淡黄色
   水平: '#DDA15E',            // 金色
   三角坑: '#A8E6CF',          // 浅绿色
-  垂直磨耗: '#FFB6C1',        // 粉红色
-  侧面磨耗: '#C7CEEA',        // 淡紫色
 }
 
 // 图表核心数据
@@ -163,8 +156,6 @@ const chartData = ref({
   右轨向: [],
   水平: [],
   三角坑: [],
-  垂直磨耗: [],
-  侧面磨耗: [],
 })
 const tagPositions = ref([])
 const sleeperPositions = ref([])
@@ -200,8 +191,6 @@ const useMockData = ref(true) // 设置为 false 可关闭模拟数据
 //     右轨向: generateMockData(0, 1.5, 0.014), // ±1.5mm
 //     水平: generateMockData(0, 1, 0.016), // ±1mm
 //     三角坑: generateMockData(0, 0.8, 0.013), // ±0.8mm
-//     垂直磨耗: generateMockData(0.5, 0.3, 0.01), // 0.5mm ± 0.3mm
-//     侧面磨耗: generateMockData(0.3, 0.2, 0.011), // 0.3mm ± 0.2mm
 //   }
 
 //   // 生成模拟轨枕和标签位置
@@ -247,7 +236,8 @@ function updateChartData(newData, newTag, newSleeper) {
   xAxisData.value.push(newData.mileage)
   for (const param of parameterList.value) {
     // 在父组件中，应使用原始的 parameterList 值作为 key
-    chartData.value[param].push(newData[param] || null)
+    const hasValue = Object.prototype.hasOwnProperty.call(newData, param)
+    chartData.value[param].push(hasValue ? newData[param] : null)
   }
   if (newTag) {
     tagPositions.value.push(newTag)
@@ -314,41 +304,90 @@ const sse = new SSEService(sseUrl)
 //     // 调用已有的函数来更新图表状态，这里什么都不用改
 //     updateChartData(newData, newTag, newSleeper);
 // };
+function getFirstNumber(...values) {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+  }
+  return null
+}
+
+function parseTrackGeometry(rawTrackGeometry) {
+  if (!rawTrackGeometry) return {}
+  if (typeof rawTrackGeometry === 'string') {
+    try {
+      return JSON.parse(rawTrackGeometry)
+    }
+    catch {
+      return {}
+    }
+  }
+  if (typeof rawTrackGeometry === 'object') {
+    return rawTrackGeometry
+  }
+  return {}
+}
+
+function getLsfValue(point, trackGeometry) {
+  const rawLsf = point?.lsf01_level ?? point?.lsf01Level
+  if (Array.isArray(rawLsf)) {
+    return getFirstNumber(rawLsf[0], trackGeometry.left_super)
+  }
+  return getFirstNumber(rawLsf, trackGeometry.left_super)
+}
+
+function buildChartDataFromPoint(point) {
+  const sensorData = point?.sensor_data || point?.sensorData || {}
+  const trackGeometry = parseTrackGeometry(point?.track_geometry || point?.trackGeometry)
+  const wearValues = point?.wear_values || point?.wearValues || {}
+
+  const mileage = getFirstNumber(trackGeometry.mileage, sensorData.mileage)
+
+  return {
+    mileage,
+    轨距: getFirstNumber(point?.tdf01_gauge, point?.tdf01Gauge),
+    左高低: getLsfValue(point, trackGeometry),
+    右高低: getFirstNumber(trackGeometry.right_super),
+    左轨向: getFirstNumber(trackGeometry.left_versine),
+    右轨向: getFirstNumber(trackGeometry.right_versine),
+    水平: getFirstNumber(sensorData.dipmeter),
+  }
+}
+
+function buildTagFromPoint(point, mileage) {
+  const sensorData = point?.sensor_data || point?.sensorData || {}
+  const tagId = getFirstNumber(sensorData.codee40, sensorData.codee40_a, sensorData.codee41, sensorData.codee42)
+  if (mileage === null || tagId === null) return null
+
+  return {
+    mileage,
+    id: tagId,
+  }
+}
+
+function buildSleeperFromPoint(point, mileage) {
+  const sensorData = point?.sensor_data || point?.sensorData || {}
+  const sleeperValue = getFirstNumber(sensorData.sleeper)
+  if (mileage === null || sleeperValue === null) return null
+
+  return {
+    mileage,
+    displayId: Number(sleeperValue.toFixed(3)),
+    uniqueId: `sleeper-${sleeperUniqueCounter++}`,
+  }
+}
+
 function handleSseMessage(point) {
-  // 将后端数据格式转换为前端需要的格式
-  const newData = {
-    mileage: point.sensorData.mileage,
-    轨距: point.tdf01Gauge,
-    轨距变化率: 0, // 实际数据中没有这个字段，可能需要计算或设为0
-    左高低: point.lsf01Level ? point.lsf01Level[0] : 0,
-    右高低: point.lsf01Level ? point.lsf01Level[1] : 0,
-    左轨向: 0, // 实际数据中没有这个字段
-    右轨向: 0, // 实际数据中没有这个字段
-    水平: point.sensorData.dipmeter,
-    三角坑: 0, // 实际数据中没有这个字段
-    垂直磨耗: 0, // 实际数据中没有这个字段
-    侧面磨耗: 0, // 实际数据中没有这个字段
-  }
-  console.warn('Received SSE data:', newData)
+  const newData = buildChartDataFromPoint(point)
 
-  let newTag = null
-  // 根据实际数据结构判断是否有标签信息
-  if (point.sensorData.codee40) {
-    newTag = {
-      mileage: point.sensorData.mileage,
-      id: point.sensorData.codee40,
-    }
+  if (newData.mileage === null) {
+    console.warn('Received SSE data without valid mileage, skipped:', point)
+    return
   }
 
-  let newSleeper = null
-  // 根据实际数据结构判断是否有轨枕信息
-  if (point.sensorData.sleeper) {
-    newSleeper = {
-      mileage: point.sensorData.mileage,
-      displayId: point.sensorData.sleeper,
-      uniqueId: `sleeper-${sleeperUniqueCounter++}`, // 前端维护唯一ID
-    }
-  }
+  const newTag = buildTagFromPoint(point, newData.mileage)
+  const newSleeper = buildSleeperFromPoint(point, newData.mileage)
 
   // 调用已有的函数来更新图表状态
   updateChartData(newData, newTag, newSleeper)
@@ -449,8 +488,6 @@ onUnmounted(() => {
 //         右轨向: 1 + Math.random() * 1,
 //         水平: Math.random() * 2 - 1,
 //         三角坑: Math.random() * 0.5,
-//         垂直磨耗: 0.5 + Math.random() * 0.5,
-//         侧面磨耗: 0.3 + Math.random() * 0.3,
 //     }
 
 //     updateChartData(chartPointData, newTag, newSleeper)
