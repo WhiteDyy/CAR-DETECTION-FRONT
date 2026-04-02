@@ -43,13 +43,15 @@
         <div class="panel-inner">
           <div class="section-title">数据分析与报表</div>
           <NSpace justify="center" wrap size="large" class="btn-group">
-            <NButton class="metric-btn" @click="handleMetric('水平')">水平</NButton>
-            <NButton class="metric-btn" @click="handleMetric('轨距')">轨距</NButton>
-            <NButton class="metric-btn" @click="handleMetric('左高低')">左高低</NButton>
-            <NButton class="metric-btn" @click="handleMetric('右高低')">右高低</NButton>
-            <NButton class="metric-btn" @click="handleMetric('左轨向')">左轨向</NButton>
-            <NButton class="metric-btn" @click="handleMetric('右轨向')">右轨向</NButton>
-            <NButton class="metric-btn" @click="handleMetric('三角坑')">三角坑</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('水平')" @click="toggleMetric('水平')">水平</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('轨距')" @click="toggleMetric('轨距')">轨距</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('左高低')" @click="toggleMetric('左高低')">左高低</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('右高低')" @click="toggleMetric('右高低')">右高低</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('左轨向')" @click="toggleMetric('左轨向')">左轨向</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('右轨向')" @click="toggleMetric('右轨向')">右轨向</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('三角坑')" @click="toggleMetric('三角坑')">三角坑</NButton>
+            <NButton class="metric-btn" :type="metricBtnType('陀螺解算轨迹')" @click="toggleMetric('陀螺解算轨迹')">陀螺解算轨迹</NButton>
+            <NButton class="metric-btn" type="primary" @click="runSelectedReports">生成报表</NButton>
           </NSpace>
         </div>
       </div>
@@ -70,6 +72,7 @@ const tableHeight = ref(360)
 const searchQuery = ref('')
 const taskList = ref([])
 const selectedRowKeys = ref([])
+const selectedMetrics = ref(['水平'])
 
 const pagination = ref({
   page: 1,
@@ -158,23 +161,19 @@ async function downloadJobData(row) {
     return
   }
 
-  const url = `${base}/jobs/${encodeURIComponent(jobId)}/sync`
   try {
-    $message.info('正在从边缘机同步并解压数据，请稍候...')
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobName }),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      $message.error(data?.detail || '同步失败')
-      return
-    }
-    $message.success(`同步完成，数据已解压到：${data.extractDir || 'data 目录'}`)
+    // 直接触发浏览器下载（zip 流），由 car_detect_win 负责从边缘机匹配 jobName 对应的 zip 并转发
+    const url = `${base}/jobs/${encodeURIComponent(jobId)}/download?jobName=${encodeURIComponent(jobName)}`
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    $message.success('已开始下载（如浏览器拦截弹窗/下载，请允许）')
   } catch (e) {
     console.error(e)
-    $message.error('同步失败：无法连接 Windows 下载服务')
+    $message.error('下载失败：无法连接 Windows 下载服务')
   }
 }
 
@@ -231,13 +230,128 @@ function updateHeight() {
   tableHeight.value = Math.max(Math.floor(h * 0.40), 220)
 }
 
-function handleMetric(name) {
+function metricBtnType(name) {
+  return selectedMetrics.value.includes(name) ? 'primary' : 'default'
+}
+
+function toggleMetric(name) {
+  const idx = selectedMetrics.value.indexOf(name)
+  if (idx >= 0)
+    selectedMetrics.value.splice(idx, 1)
+  else
+    selectedMetrics.value.push(name)
+}
+
+async function runLevelReport() {
+  if (!WIN_DOWNLOAD_SERVICE_BASE_URL) {
+    $message.error('未配置 Windows 下载服务地址（VITE_WIN_DOWNLOAD_SERVICE_BASE_URL）')
+    return
+  }
+
+  const base = String(WIN_DOWNLOAD_SERVICE_BASE_URL).replace(/\/+$/, '')
+  const jobs = taskList.value
+    .filter(row => selectedRowKeys.value.includes(row.id))
+    .map(row => ({ id: row.id, jobName: row.jobName }))
+
+  if (!jobs.length) {
+    $message.error('未找到选中任务的数据')
+    return
+  }
+
+  try {
+    $message.info('正在生成水平报表，请稍候...')
+    const res = await fetch(`${base}/reports/level`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobs }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      $message.error(data?.detail || '生成报表失败')
+      return
+    }
+    $message.success('水平报表已生成，请在 car_detect_win 的 data 目录中查看图片文件')
+  } catch (e) {
+    console.error(e)
+    $message.error('生成报表失败：无法连接 Windows 下载服务')
+  }
+}
+
+async function runGyroTrajectoryReport() {
+  if (!WIN_DOWNLOAD_SERVICE_BASE_URL) {
+    $message.error('未配置 Windows 下载服务地址（VITE_WIN_DOWNLOAD_SERVICE_BASE_URL）')
+    return
+  }
+  const base = String(WIN_DOWNLOAD_SERVICE_BASE_URL).replace(/\/+$/, '')
+  const jobs = taskList.value
+    .filter(row => selectedRowKeys.value.includes(row.id))
+    .map(row => ({ id: row.id, jobName: row.jobName }))
+
+  if (!jobs.length) {
+    $message.error('未找到选中任务的数据')
+    return
+  }
+
+  try {
+    $message.info('正在生成陀螺解算轨迹报表，请稍候...')
+    const res = await fetch(`${base}/reports/gyro_trajectory`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobs }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      $message.error(data?.detail || '生成报表失败')
+      return
+    }
+    $message.success('陀螺解算轨迹报表已生成，请在 car_detect_win 的 data 目录中查看 docx 文件')
+  } catch (e) {
+    console.error(e)
+    $message.error('生成报表失败：无法连接 Windows 下载服务')
+  }
+}
+
+async function runSelectedReports() {
   if (!selectedRowKeys.value.length) {
     $message.warning('请先在上方选择任务')
     return
   }
-  // 这里只先把界面打通；后续你告诉我每个指标对应哪张表/哪条接口，我再接真实逻辑
-  $message.info(`已选择 ${selectedRowKeys.value.length} 个任务，准备分析：${name}`)
+  if (!selectedMetrics.value.length) {
+    $message.warning('请先选择要生成的报表类型（可多选）')
+    return
+  }
+
+  if (!WIN_DOWNLOAD_SERVICE_BASE_URL) {
+    $message.error('未配置 Windows 下载服务地址（VITE_WIN_DOWNLOAD_SERVICE_BASE_URL）')
+    return
+  }
+
+  const base = String(WIN_DOWNLOAD_SERVICE_BASE_URL).replace(/\/+$/, '')
+  const jobs = taskList.value
+    .filter(row => selectedRowKeys.value.includes(row.id))
+    .map(row => ({ id: row.id, jobName: row.jobName }))
+  if (!jobs.length) {
+    $message.error('未找到选中任务的数据')
+    return
+  }
+
+  try {
+    $message.info('正在生成报表，请稍候...')
+    const res = await fetch(`${base}/reports/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobs, metrics: selectedMetrics.value }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      $message.error(data?.detail || '生成报表失败')
+      return
+    }
+    $message.success('报表已生成，请在 car_detect_win 的 data 目录中查看 docx 文件')
+  } catch (e) {
+    console.error(e)
+    $message.error('生成报表失败：无法连接 Windows 下载服务')
+  }
 }
 
 onMounted(() => {

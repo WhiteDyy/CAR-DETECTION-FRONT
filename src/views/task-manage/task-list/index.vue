@@ -86,6 +86,14 @@
               clearable
             />
           </n-form-item>
+
+          <n-form-item label="等距脉冲数" path="equidistantPulseCount">
+            <n-input
+              v-model:value="createFormData.equidistantPulseCount"
+              placeholder="请输入大于 0 的整数"
+              clearable
+            />
+          </n-form-item>
           
           <n-form-item label="线路类型" path="lineType">
             <n-select
@@ -131,6 +139,7 @@
               clearable
             />
           </n-form-item>
+
           
 
         </n-form>
@@ -258,6 +267,7 @@ import { useRouter } from 'vue-router'
 import api from './api'
 
 const EDGE_DATA_DOWNLOAD_URL = import.meta.env.VITE_EDGE_DATA_DOWNLOAD_URL
+const WIN_DOWNLOAD_SERVICE_BASE_URL = import.meta.env.VITE_WIN_DOWNLOAD_SERVICE_BASE_URL
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -274,7 +284,8 @@ const createFormData = ref({
   direction: '上行',
   operator: '测试',
   deviceId: 'dev001',
-  speed: '5'
+  speed: '5',
+  equidistantPulseCount: '300'
 })
 
 // 新增任务表单验证规则
@@ -283,6 +294,20 @@ const createFormRules = {
     required: true,
     message: '请输入任务名称',
     trigger: ['blur', 'input']
+  },
+  equidistantPulseCount: {
+    required: true,
+    trigger: ['blur', 'input'],
+    validator: (_rule, value) => {
+      if (value === null || value === undefined || String(value).trim() === '') {
+        return new Error('请输入等距脉冲数')
+      }
+      const n = Number(value)
+      if (!Number.isInteger(n) || n <= 0) {
+        return new Error('等距脉冲数必须是大于 0 的整数')
+      }
+      return true
+    }
   }
 }
 
@@ -482,12 +507,49 @@ function showReportForm() {
 }
 
 function downloadEdgeData() {
-  if (!EDGE_DATA_DOWNLOAD_URL) {
-    $message.error('未配置边缘机下载地址（VITE_EDGE_DATA_DOWNLOAD_URL）')
+  if (!WIN_DOWNLOAD_SERVICE_BASE_URL) {
+    // 兼容旧配置：如果还在用浏览器直连边缘机下载，这里保留旧逻辑
+    if (!EDGE_DATA_DOWNLOAD_URL) {
+      $message.error('未配置 Windows 下载服务地址（VITE_WIN_DOWNLOAD_SERVICE_BASE_URL）或边缘机下载地址（VITE_EDGE_DATA_DOWNLOAD_URL）')
+      return
+    }
+    window.location.href = EDGE_DATA_DOWNLOAD_URL
     return
   }
-  // 用“跳转下载”触发浏览器下载（不走 XHR/fetch，通常不会被 CORS 限制）
-  window.location.href = EDGE_DATA_DOWNLOAD_URL
+
+  if (!selectedRowKeys.value.length) {
+    $message.warning('请先选择要下载的任务')
+    return
+  }
+  if (selectedRowKeys.value.length > 1) {
+    $message.warning('一次只能下载一个任务，请只选择一个任务')
+    return
+  }
+
+  const jobId = String(selectedRowKeys.value[0])
+  const task = taskList.value.find(t => String(t.id) === jobId)
+  const jobName = task?.jobName != null ? String(task.jobName) : ''
+
+  const base = String(WIN_DOWNLOAD_SERVICE_BASE_URL).replace(/\/+$/, '')
+  const url = `${base}/jobs/${encodeURIComponent(jobId)}/sync`
+
+  $message.info('正在从边缘机同步并解压数据，请稍候...')
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobName }),
+  })
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.detail || '同步失败')
+      }
+      $message.success(`同步完成，数据已解压到：${data.extractDir || 'data 目录'}`)
+    })
+    .catch((e) => {
+      console.error(e)
+      $message.error(`同步失败：${e?.message || '无法连接 Windows 下载服务'}`)
+    })
 }
 
 // 处理表单提交
@@ -827,6 +889,7 @@ async function createTaskRecord(task) {
     lineType: task.lineType,
     direction: task.direction,
     speed: task.speed,
+    equidistantPulseCount: Number(task.equidistantPulseCount || 300),
   })
   
   if (response.code !== 0) {
@@ -926,7 +989,8 @@ function showCreateDialog() {
     direction: '上行',
     operator: '测试',
     deviceId: 'dev001',
-    speed: '5'
+    speed: '5',
+    equidistantPulseCount: '300'
   }
   showCreateModal.value = true
 }
@@ -949,7 +1013,8 @@ async function handleCreateSubmit() {
       direction: createFormData.value.direction,
       operator: createFormData.value.operator,
       deviceId: createFormData.value.deviceId,
-      speed: createFormData.value.speed
+      speed: createFormData.value.speed,
+      equidistantPulseCount: Number(createFormData.value.equidistantPulseCount)
       // 注意：不包含 startTime 和 endTime，这些字段由开始/结束检测按钮自动设置
     }
     

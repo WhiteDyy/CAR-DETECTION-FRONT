@@ -13,7 +13,7 @@
               </div>
               <LineChart
                 :data="chartData" parameter="groa" color="rgb(255, 99, 132)" :x-axis-data="xAxisSequence"
-                title="X向陀螺" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
+                title="陀螺A" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
                 :max-display-points="600"
               />
             </NCard>
@@ -27,7 +27,7 @@
               </div>
               <LineChart
                 :data="chartData" parameter="grob" color="rgb(54, 162, 235)" :x-axis-data="xAxisSequence"
-                title="Z向陀螺" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
+                title="陀螺B" x-axis-name="里程" y-axis-name="角速度(°/s)" :y-axis-digits="4"
                 :max-display-points="600"
               />
             </NCard>
@@ -185,6 +185,7 @@ const chartData = reactive({
   // 编码器
   encoderLeft: [],
   encoderRight: [],
+  encoderAlign: [],
   // 超声
   ultrasonicLeft: [],
   ultrasonicRight: [],
@@ -248,6 +249,7 @@ function appendPoint(parsedData) {
   chartData.dipmeter.push(parsedData.dipmeter)
   chartData.encoderLeft.push(parsedData.encoderLeft)
   chartData.encoderRight.push(parsedData.encoderRight)
+  chartData.encoderAlign.push(parsedData.encoderAlign)
   chartData.ultrasonicLeft.push(parsedData.ultrasonicLeft)
   chartData.ultrasonicRight.push(parsedData.ultrasonicRight)
   chartData.laserLeft.push(parsedData.laserLeft)
@@ -268,23 +270,24 @@ function parsePoint(data) {
     return null
   }
   return {
-    sequence: data.sequence,
-    // 编码器
-    encoderLeft: Number(data.codee41) || 0,
-    encoderRight: Number(data.codee42) || 0,
-    // 超声：gaccel_2 -> 左, gaccel_3 -> 右
-    ultrasonicLeft: Number(data.gaccel_2) || 0,
-    ultrasonicRight: Number(data.gaccel_3) || 0,
-    // 点激光：gaccel_0 -> 左, gaccel_1 -> 右
-    laserLeft: Number(data.gaccel_0) || 0,
-    laserRight: Number(data.gaccel_1) || 0,
-    cnt: Number(data.cnt) || 0,
+    sequence: Number(data.sequence) || 0,
+    // 编码器（当前协议：右=codee40，左=codee42，对齐=codee41）
+    encoderRight: Number(data.codee40) || 0,
+    encoderLeft: Number(data.codee42) || 0,
+    encoderAlign: Number(data.codee41) || 0,
+    // 超声：gaccel_2 -> 右, gaccel_3 -> 左
+    ultrasonicRight: Number(data.gaccel_2) || 0,
+    ultrasonicLeft: Number(data.gaccel_3) || 0,
+    // 点激光：gaccel_0 -> 右, gaccel_1 -> 左
+    laserRight: Number(data.gaccel_0) || 0,
+    laserLeft: Number(data.gaccel_1) || 0,
+    cnt: Number(data.codee40 ?? data.cnt) || 0,
     dipmeter: Number(data.dipmeter) || 0,
-    // X/Y 向陀螺：显示为原始值 / 840000
-    groa: (Number(data.groa) || 0) / 840000,
-    grob: (Number(data.grob) || 0) / 840000,
-    mileage: Number(data.mileage) || 0,
-    startTime: typeof data.startTime === 'string' ? data.startTime : new Date().toISOString(),
+    // 新协议 groa/grob 已是 float，直接展示
+    groa: Number(data.groa) || 0,
+    grob: Number(data.grob) || 0,
+    mileage: Number(data.length ?? data.mileage) || 0,
+    startTime: typeof data.time === 'string' ? data.time : new Date().toISOString(),
   }
 }
 
@@ -340,8 +343,8 @@ const enlargeKey = ref('')
 
 const enlargeTitle = computed(() => {
   const map = {
-    groa: 'X向陀螺（放大）',
-    grob: 'Z向陀螺（放大）',
+    groa: '陀螺A（放大）',
+    grob: '陀螺B（放大）',
     dipmeter: '倾角仪（放大）',
     encoder: '编码器（放大）',
     ultrasonic: '超声（放大）',
@@ -358,9 +361,9 @@ const enlargeXAxisData = computed(() => {
 const enlargeChartProps = computed(() => {
   switch (enlargeKey.value) {
     case 'groa':
-      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: 'X向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: '陀螺A', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
     case 'grob':
-      return { parameter: 'grob', color: 'rgb(54, 162, 235)', title: 'Z向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+      return { parameter: 'grob', color: 'rgb(54, 162, 235)', title: '陀螺B', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
     case 'dipmeter':
       return { parameter: 'dipmeter', color: 'rgb(75, 192, 192)', title: '倾角仪', xAxisName: '里程', yAxisName: '角度/°' }
     case 'encoder':
@@ -370,7 +373,7 @@ const enlargeChartProps = computed(() => {
     case 'laser':
       return { seriesConfigs: laserSeries, title: '点激光', xAxisName: '里程', yAxisName: '电压/V' }
     default:
-      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: 'X向陀螺', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
+      return { parameter: 'groa', color: 'rgb(255, 99, 132)', title: '陀螺A', xAxisName: '里程', yAxisName: '角速度(/s²)', yAxisDigits: 4 }
   }
 })
 

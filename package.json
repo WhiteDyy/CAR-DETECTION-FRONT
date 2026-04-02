@@ -42,6 +42,7 @@
     "@unocss/preset-rem-to-px": "^66.0.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
+    "baseline-browser-mapping": "^2.10.7",
     "eslint": "^9.21.0",
     "eslint-plugin-format": "^1.0.1",
     "esno": "^4.8.0",
