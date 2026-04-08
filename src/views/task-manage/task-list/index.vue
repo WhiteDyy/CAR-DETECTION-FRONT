@@ -30,6 +30,10 @@
           <NButton class="download-btn" @click="downloadEdgeData">
             下载数据
           </NButton>
+          <!-- 标定按钮 -->
+          <NButton class="calibrate-btn" :loading="calibrating" @click="triggerCalibration">
+            标定
+          </NButton>
         </NSpace>
       </NSpace>
 
@@ -87,58 +91,48 @@
             />
           </n-form-item>
 
-          <n-form-item label="等距脉冲数" path="equidistantPulseCount">
+          <n-form-item label="测试区间" path="testSection">
             <n-input
-              v-model:value="createFormData.equidistantPulseCount"
-              placeholder="请输入大于 0 的整数"
+              v-model:value="createFormData.testSection"
+              placeholder="默认无"
               clearable
             />
           </n-form-item>
-          
-          <n-form-item label="线路类型" path="lineType">
-            <n-select
-              v-model:value="createFormData.lineType"
-              placeholder="请选择线路类型"
-              :options="lineTypeOptions"
+
+          <n-form-item label="测试日期" path="testDate">
+            <n-date-picker
+              v-model:value="createFormData.testDate"
+              type="datetime"
               clearable
+              style="width: 100%"
             />
           </n-form-item>
-          
-          <n-form-item label="方向" path="direction">
-            <n-select
-              v-model:value="createFormData.direction"
-              placeholder="请选择方向"
-              :options="directionOptions"
-              clearable
-            />
-          </n-form-item>
-          
-          <n-form-item label="操作人员" path="operator">
+
+          <n-form-item label="测试人员" path="operator">
             <n-input
               v-model:value="createFormData.operator"
-              placeholder="请输入操作人员"
+              placeholder="默认 test"
               clearable
             />
           </n-form-item>
-          
-          <n-form-item label="设备编号" path="deviceId">
+
+          <n-form-item label="采样频率" path="samplingFrequency">
             <n-input
-              v-model:value="createFormData.deviceId"
-              placeholder="请输入设备编号"
+              v-model:value="createFormData.samplingFrequency"
+              placeholder="默认 300"
               clearable
             />
           </n-form-item>
-          
-          <n-form-item label="速度" path="speed">
+
+          <n-form-item label="测试类型" path="testType">
             <n-select
-              v-model:value="createFormData.speed"
-              placeholder="请选择或输入速度 (km/h)"
-              :options="speedOptions"
-              filterable
-              tag
+              v-model:value="createFormData.testType"
+              placeholder="请选择测试类型"
+              :options="testTypeOptions"
               clearable
             />
           </n-form-item>
+
 
           
 
@@ -252,6 +246,48 @@
         </template>
       </n-card>
     </n-modal>
+
+    <!-- 标定参数输入对话框 -->
+    <n-modal v-model:show="showCalibrationModal" :mask-closable="false">
+      <n-card
+        style="width: 900px; max-width: 95vw;"
+        title="标定参数输入（轨道坐标系目标点）"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <template #header-extra>
+          <n-button quaternary circle @click="showCalibrationModal = false">
+            ×
+          </n-button>
+        </template>
+
+        <n-text depth="3">每路激光输入格式：x,y; x,y; x,y（至少2个点）</n-text>
+
+        <n-form label-placement="left" label-width="130px" style="margin-top: 12px;">
+          <n-form-item label="激光1目标点">
+            <n-input v-model:value="calibrationForm.laser1" placeholder="例如：440,64;475,64;510,64" clearable />
+          </n-form-item>
+          <n-form-item label="激光2目标点">
+            <n-input v-model:value="calibrationForm.laser2" placeholder="例如：440,64;475,64;510,64" clearable />
+          </n-form-item>
+          <n-form-item label="激光3目标点">
+            <n-input v-model:value="calibrationForm.laser3" placeholder="例如：1595,64;1630,64;1665,64" clearable />
+          </n-form-item>
+          <n-form-item label="激光4目标点">
+            <n-input v-model:value="calibrationForm.laser4" placeholder="例如：1595,64;1630,64;1665,64" clearable />
+          </n-form-item>
+        </n-form>
+
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showCalibrationModal = false">取消</n-button>
+            <n-button type="primary" :loading="calibrating" @click="confirmCalibration">开始标定</n-button>
+          </n-space>
+        </template>
+      </n-card>
+    </n-modal>
   </CommonPage>
 </template>
 
@@ -280,12 +316,11 @@ const createLoading = ref(false)
 const createFormRef = ref(null)
 const createFormData = ref({
   jobName: '',
-  lineType: '正线',
-  direction: '上行',
-  operator: '测试',
-  deviceId: 'dev001',
-  speed: '5',
-  equidistantPulseCount: '300'
+  testSection: '无',
+  testDate: Date.now(),
+  operator: 'test',
+  samplingFrequency: '300',
+  testType: '线岔道轨道几何参数测量模式',
 })
 
 // 新增任务表单验证规则
@@ -295,49 +330,41 @@ const createFormRules = {
     message: '请输入任务名称',
     trigger: ['blur', 'input']
   },
-  equidistantPulseCount: {
+  samplingFrequency: {
     required: true,
     trigger: ['blur', 'input'],
     validator: (_rule, value) => {
       if (value === null || value === undefined || String(value).trim() === '') {
-        return new Error('请输入等距脉冲数')
+        return new Error('请输入采样频率')
       }
       const n = Number(value)
       if (!Number.isInteger(n) || n <= 0) {
-        return new Error('等距脉冲数必须是大于 0 的整数')
+        return new Error('采样频率必须是大于 0 的整数')
       }
       return true
     }
-  }
+  },
 }
 
-// 线路类型选项
-const lineTypeOptions = [
-  { label: '正线', value: '正线' },
-  { label: '道岔', value: '道岔' }
-]
-
-// 方向选项
-const directionOptions = [
-  { label: '上行', value: '上行' },
-  { label: '下行', value: '下行' }
-]
-
-// 速度选项
-const speedOptions = [
-  { label: '0 km/h', value: '0' },
-  { label: '5 km/h', value: '5' },
-  { label: '10 km/h', value: '10' },
-  { label: '15 km/h', value: '15' },
-  { label: '20 km/h', value: '20' },
-  { label: '25 km/h', value: '25' },
-  { label: '30 km/h', value: '30' }
+// 测试类型选项
+const testTypeOptions = [
+  { label: '线岔道轨道几何参数测量模式', value: '线岔道轨道几何参数测量模式' },
+  { label: '道岔几何参数测量模式', value: '道岔几何参数测量模式' },
+  { label: '钢轨波磨测量模式', value: '钢轨波磨测量模式' },
 ]
 
 // 生成报表相关状态
 const showFormModal = ref(false)
 const submitLoading = ref(false)
 const reportFormRef = ref(null)
+const calibrating = ref(false)
+const showCalibrationModal = ref(false)
+const calibrationForm = ref({
+  laser1: '',
+  laser2: '',
+  laser3: '',
+  laser4: '',
+})
 
 // 表单数据 - 统一表单，应用到所有选中任务
 const reportFormData = ref({
@@ -552,6 +579,77 @@ function downloadEdgeData() {
     })
 }
 
+function triggerCalibration() {
+  if (calibrating.value) return
+
+  // 打开输入弹框，由用户手动输入轨道坐标系目标点
+  showCalibrationModal.value = true
+}
+
+function parseFeaturePointsText(text) {
+  const raw = String(text || '').trim()
+  if (!raw) return []
+  return raw
+    .split(';')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [x, y] = pair.split(',').map(v => Number(String(v).trim()))
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        throw new Error(`点格式错误: ${pair}，应为 x,y`) 
+      }
+      return [x, y]
+    })
+}
+
+async function confirmCalibration() {
+  try {
+    calibrating.value = true
+
+    const fp1 = parseFeaturePointsText(calibrationForm.value.laser1)
+    const fp2 = parseFeaturePointsText(calibrationForm.value.laser2)
+    const fp3 = parseFeaturePointsText(calibrationForm.value.laser3)
+    const fp4 = parseFeaturePointsText(calibrationForm.value.laser4)
+
+    const all = [fp1, fp2, fp3, fp4]
+    for (let i = 0; i < all.length; i += 1) {
+      if (all[i].length < 2) {
+        throw new Error(`激光${i + 1} 目标点至少输入2个`) 
+      }
+    }
+
+    const selectedTask = selectedRowKeys.value.length
+      ? taskList.value.find(t => String(t.id) === String(selectedRowKeys.value[0]))
+      : null
+    const taskName = selectedTask?.jobName ? String(selectedTask.jobName) : 'calibration'
+
+    const resp = await api.calibrate({
+      taskName,
+      featurePoints: {
+        laser1: fp1,
+        laser2: fp2,
+        laser3: fp3,
+        laser4: fp4,
+      },
+    })
+
+    if (resp?.code !== 0) {
+      throw new Error(resp?.message || '发送标定命令失败')
+    }
+
+    showCalibrationModal.value = false
+    $message.success('标定命令已发送：将先采集，再自动提取齿尖交点并计算 R/T')
+  }
+  catch (error) {
+    console.error('触发标定失败:', error)
+    $message.error(error?.message || '触发标定失败')
+    throw error
+  }
+  finally {
+    calibrating.value = false
+  }
+}
+
 // 处理表单提交
 async function handleFormSubmit() {
   try {
@@ -620,8 +718,14 @@ async function generateReport() {
 const columns = [
   { type: 'selection', width: 60 },
   { title: '任务名称', key: 'jobName', width: 150, ellipsis: { tooltip: true } },
-  { title: '线路类型', key: 'lineType', width: 80 },
-  { title: '方向', key: 'direction', width: 50 },
+  { title: '测试类型', key: 'testType', width: 220, ellipsis: { tooltip: true } },
+  { title: '测试区间', key: 'testSection', width: 120, ellipsis: { tooltip: true } },
+  {
+    title: '测试日期',
+    key: 'testDate',
+    width: 160,
+    render: row => formatDateTime(row.testDate || row.createdAt),
+  },
   {
     title: '执行时间',
     key: 'timeRange',
@@ -631,13 +735,12 @@ const columns = [
     },
   },
   { title: '操作人员', key: 'operator', width: 80, ellipsis: { tooltip: true } },
-  { title: '设备编号', key: 'deviceId', width: 140, ellipsis: { tooltip: true } },
   {
-    title: '速度',
-    key: 'speed',
-    width: 90,
+    title: '采样频率',
+    key: 'samplingFrequency',
+    width: 100,
     render(row) {
-      return row.speed ? `${row.speed} km/h` : '-'
+      return row.samplingFrequency ? `${row.samplingFrequency}` : '-'
     },
   },
   {
@@ -885,11 +988,13 @@ async function createTaskRecord(task) {
     jobName: task.jobName,
     startTime: formatDateTimeForApi(Date.now()), // 设置为当前时间
     operator: task.operator,
-    deviceId: task.deviceId,
     lineType: task.lineType,
     direction: task.direction,
     speed: task.speed,
-    equidistantPulseCount: Number(task.equidistantPulseCount || 300),
+    testSection: task.testSection,
+    testDate: task.testDate,
+    testType: task.testType,
+    samplingFrequency: Number(task.samplingFrequency || task.speed || 300),
   })
   
   if (response.code !== 0) {
@@ -985,12 +1090,11 @@ function showCreateDialog() {
   // 重置表单数据（不包含开始时间和结束时间，这些由开始/结束检测按钮自动设置）
   createFormData.value = {
     jobName: '',
-    lineType: '正线',
-    direction: '上行',
-    operator: '测试',
-    deviceId: 'dev001',
-    speed: '5',
-    equidistantPulseCount: '300'
+    testSection: '无',
+    testDate: Date.now(),
+    operator: 'test',
+    samplingFrequency: '300',
+    testType: '线岔道轨道几何参数测量模式',
   }
   showCreateModal.value = true
 }
@@ -1009,12 +1113,14 @@ async function handleCreateSubmit() {
     // 构建请求数据（新增任务时，不设置startTime和endTime，这些由开始/结束检测按钮自动设置）
     const requestData = {
       jobName: createFormData.value.jobName,
-      lineType: createFormData.value.lineType,
-      direction: createFormData.value.direction,
-      operator: createFormData.value.operator,
-      deviceId: createFormData.value.deviceId,
-      speed: createFormData.value.speed,
-      equidistantPulseCount: Number(createFormData.value.equidistantPulseCount)
+      lineType: '道岔',
+      direction: '-',
+      testSection: createFormData.value.testSection || '无',
+      testDate: createFormData.value.testDate,
+      operator: createFormData.value.operator || 'test',
+      samplingFrequency: Number(createFormData.value.samplingFrequency || 300),
+      testType: createFormData.value.testType,
+      speed: String(createFormData.value.samplingFrequency || '300')
       // 注意：不包含 startTime 和 endTime，这些字段由开始/结束检测按钮自动设置
     }
     
@@ -1103,6 +1209,12 @@ watch(searchQuery, () => {
 .download-btn:deep(.n-button) {
   background-color: #5b6cff !important;
   border-color: #5b6cff !important;
+  color: #ffffff !important;
+}
+
+.calibrate-btn:deep(.n-button) {
+  background-color: #ff9800 !important;
+  border-color: #ff9800 !important;
   color: #ffffff !important;
 }
 

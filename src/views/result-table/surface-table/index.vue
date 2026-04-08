@@ -656,7 +656,7 @@ const standTablecolumns = [
     },
   },
   { title: '轨距', key: 'gauge' },
-  { title: '轨距变化率11', key: 'gaugeChangeRate' },
+  { title: '轨距变化率', key: 'gaugeChangeRate' },
   { title: '水平', key: 'level' },
   { title: '三角坑', key: 'triangularPit' },
   { title: '高低', key: 'height' },

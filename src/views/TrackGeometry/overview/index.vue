@@ -488,7 +488,6 @@ onUnmounted(() => {
 //         右轨向: 1 + Math.random() * 1,
 //         水平: Math.random() * 2 - 1,
 //         三角坑: Math.random() * 0.5,
-//     }
 
 //     updateChartData(chartPointData, newTag, newSleeper)
 //     currentMileageInDecimeters += 1

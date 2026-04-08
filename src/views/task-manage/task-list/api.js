@@ -8,6 +8,7 @@ export default {
   createJob: data => request.post('/jobs/create', data),
   startCurrentJob: data => request.post('/jobs/start_job', data),
   stopCurrentJob: data => request.post('/jobs/end_job', data),
+  calibrate: data => request.post('/jobs/calibrate', data || {}),
   deleteJob: id => request.delete(`/jobs/${id}`),
   generateReport: data => request.post('/jobs/generate_report', data, { responseType: 'arraybuffer' }),
 }
