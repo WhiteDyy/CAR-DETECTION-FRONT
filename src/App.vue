@@ -14,24 +14,26 @@
     :theme="appStore.isDark ? darkTheme : undefined"
     :theme-overrides="appStore.naiveThemeOverrides"
   >
-    <router-view v-if="Layout" v-slot="{ Component, route: curRoute }">
-      <component :is="Layout">
-        <transition name="fade-slide" mode="out-in" appear>
-          <KeepAlive :include="keepAliveNames">
-            <component :is="Component" v-if="!tabStore.reloading" :key="curRoute.fullPath" />
-          </KeepAlive>
-        </transition>
-      </component>
+    <n-message-provider>
+      <router-view v-if="Layout" v-slot="{ Component, route: curRoute }">
+        <component :is="Layout">
+          <transition name="fade-slide" mode="out-in" appear>
+            <KeepAlive :include="keepAliveNames">
+              <component :is="Component" v-if="!tabStore.reloading" :key="curRoute.fullPath" />
+            </KeepAlive>
+          </transition>
+        </component>
 
-      <LayoutSetting v-if="layoutSettingVisible" class="fixed right-12 top-1/2 z-999" />
-    </router-view>
+        <LayoutSetting v-if="layoutSettingVisible" class="fixed right-12 top-1/2 z-999" />
+      </router-view>
+    </n-message-provider>
   </n-config-provider>
 </template>
 
 <script setup>
 import { LayoutSetting } from '@/components'
 import { useAppStore, useTabStore } from '@/store'
-import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
+import { darkTheme, dateZhCN, zhCN, NMessageProvider } from 'naive-ui'
 import { layoutSettingVisible } from './settings'
 
 const layouts = new Map()

@@ -18,7 +18,6 @@ import { setupNaiveDiscreteApi } from './utils'
 import '@/styles/reset.css'
 import '@/styles/global.css'
 import 'uno.css'
-import '@/assets/styles/fonts.css'
 
 async function bootstrap() {
   const app = createApp(App)
